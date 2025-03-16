@@ -160,6 +160,12 @@
                 <input type="number" id="endurance" step="0.1">
             </div>
         </div>
+        <div class="input-group" style="grid-column: span 2;">
+            <label style="margin: 1rem 0;">
+                <input type="checkbox" id="useInterpolation" unchecked>
+                启用线性插值计算
+            </label>
+        </div>
         <button onclick="calculate()">立即计算成绩</button>
         <div class="result-card" id="result" style="display: none;">
             <div class="score-display">
@@ -266,6 +272,7 @@
         function calculate() {
             const gender = genderSelect.value;
             const grade = gradeSelect.value;
+            const useInterpolation = document.getElementById('useInterpolation').checked;
             const inputs = {
                 height: parseFloat(document.getElementById('height').value),
                 weight: parseFloat(document.getElementById('weight').value),
@@ -281,7 +288,13 @@
 
             // 定义线性插值函数
             function linearInterpolation(x, x1, k, y0) {
-                return (1 / k) * Math.abs(x - x1) + y0;
+                if (useInterpolation) return (1 / k) * Math.abs(x - x1) + y0;
+                else {
+                    const temp = (1 / k) * Math.abs(x - x1) + y0;
+                    if (temp >= 80) return Math.floor(temp) - Math.floor(temp) % 5;
+                    else if (temp >= 60) return Math.floor(temp) - Math.floor(temp) % 2;
+                    else return Math.floor(temp) - Math.floor(temp) % 10;
+                }
             }
             let cutting_points = []
             let cutting_scores = []
