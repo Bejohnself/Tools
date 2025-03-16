@@ -129,35 +129,35 @@
             </div>
             <div class="input-group">
                 <label>身高（cm）</label>
-                <input type="number" id="height" step="0.1">
+                <input type="number" id="height" step="0.1" value="170">
             </div>
             <div class="input-group">
                 <label>体重（kg）</label>
-                <input type="number" id="weight" step="0.1">
+                <input type="number" id="weight" step="0.1" value="60">
             </div>
             <div class="input-group">
                 <label id="vitalLabel">肺活量（ml）</label>
-                <input type="number" id="vitalCapacity">
+                <input type="number" id="vitalCapacity" value="5000">
             </div>
             <div class="input-group">
                 <label>50米跑（秒）</label>
-                <input type="number" id="sprint" step="0.1">
+                <input type="number" id="sprint" step="0.1" value="8.0">
             </div>
             <div class="input-group">
                 <label>坐位体前屈（cm）</label>
-                <input type="number" id="sitReach" step="0.1">
+                <input type="number" id="sitReach" step="0.1" value="20">
             </div>
             <div class="input-group">
                 <label>立定跳远（cm）</label>
-                <input type="number" id="jump">
+                <input type="number" id="jump" value="200">
             </div>
             <div class="input-group">
                 <label id="strengthLabel">引体向上（次数）</label>
-                <input type="number" id="strength">
+                <input type="number" id="strength" step="1" value="10">
             </div>
             <div class="input-group">
                 <label id="enduranceLabel">1000米跑（秒）</label>
-                <input type="number" id="endurance" step="0.1">
+                <input type="number" id="endurance" step="0.1" value="300">
             </div>
         </div>
         <div class="input-group" style="grid-column: span 2;">
@@ -200,6 +200,14 @@
                 <span id="enduranceType">耐力跑得分(20%)</span>
                 <span id="enduranceScore">0</span>
             </div>
+            <div class="detail-item">
+                <span id="additionStrengthType">力量项目附加分(满分10分)</span>
+                <span id="additionScore_strength">0</span>
+            </div>
+            <div class="detail-item">
+                <span id="additionEnduranceType">中长跑附加分(满分10分)</span>
+                <span id="additionScore_endurance">0</span>
+            </div>
         </div>
     </div>
     <script>
@@ -222,12 +230,16 @@
                 isMale ? '引体向上（次数）' : '仰卧起坐（次数）';
             document.getElementById('strengthType').textContent =
                 isMale ? '引体向上得分(10%)' : '仰卧起坐得分(10%)';
+            document.getElementById('additionStrengthType').textContent =
+                isMale ? '引体向上附加分(满分10分)' : '仰卧起坐附加分(满分10分)';
 
             // 更新耐力跑标签
             document.getElementById('enduranceLabel').textContent =
                 isMale ? '1000米跑（秒）' : '800米跑（秒）';
             document.getElementById('enduranceType').textContent =
                 isMale ? '1000米跑得分(20%)' : '800米跑得分(20%)';
+            document.getElementById('additionEnduranceType').textContent =
+                isMale ? '1000米跑附加分(满分10分)' : '800米跑附加分(满分10分)';
         }
 
         function validateInputs(inputs) {
@@ -512,6 +524,35 @@
             }
             enduranceScore = piecewise_calculateScore(cutting_points, cutting_scores, between_k, endurance);
 
+            //计算附加分
+            // 力量项目(引体向上和仰卧起坐)
+            let additionScore_strength = 0;
+            if (strengthScore == 100) {
+                if (gender === 'male') {
+                    if (grade === '1-2') additionScore_strength = strength - 19;
+                    else additionScore_strength = strength - 20;
+                }
+                else {
+                    if (grade === '1-2') additionScore_strength = strength <= 62 ? Math.floor((strength - 56) / 2) : 3 + (strength - 62);
+                    else additionScore_strength = strength <= 63 ? Math.floor((strength - 57) / 2) : 3 + (strength - 63);
+                }
+                if (additionScore_strength > 10) additionScore_strength = 10;
+            }
+
+            // 中长跑
+            let additionScore_endurance = 0;
+            if (enduranceScore == 100) {
+                if (gender === 'male') {
+                    if (grade === '1-2') additionScore_endurance = Math.floor(endurance >= 177 ? (197 - endurance) / 4 : 5 + (177 - endurance) / 3);
+                    else additionScore_endurance = Math.floor(endurance >= 175 ? (195 - endurance) / 4 : 5 + (175 - endurance) / 3);
+                }
+                else {
+                    if (grade === '1-2') additionScore_endurance = Math.floor((198 - endurance) / 5);
+                    else additionScore_endurance = Math.floor((196 - endurance) / 5);
+                }
+                if (additionScore_endurance > 10) additionScore_endurance = 10;
+            }
+
             // 计算各项目得分
             const scores = {
                 bmi: bmiScore,
@@ -520,7 +561,9 @@
                 sitReach: sitReachScore,
                 jump: jumpScore,
                 strength: strengthScore,
-                endurance: enduranceScore
+                endurance: enduranceScore,
+                addition_strength: additionScore_strength,
+                addition_endurance: additionScore_endurance
             };
 
             // 总分计算（保留1位小数）
@@ -531,12 +574,15 @@
                 scores.sitReach * 0.10 +
                 scores.jump * 0.10 +
                 scores.strength * 0.10 +
-                scores.endurance * 0.20
+                scores.endurance * 0.20 +
+                scores.addition_strength +
+                scores.addition_endurance
             ).toFixed(1);
 
             // 确定等级
-            let gradeLevel = '非常遗憾，不及格';
-            if (total >= 90) gradeLevel = '太强了！！';
+            let gradeLevel = '再加把劲！';
+            if (total >= 100) gradeLevel = '膜拜大佬！！！';
+            else if (total >= 90) gradeLevel = '太强了！！';
             else if (total >= 65) gradeLevel = '不错呦！';
             else if (total >= 60) gradeLevel = '及格万岁！';
 
@@ -552,6 +598,8 @@
             document.getElementById('jumpScore').textContent = scores.jump.toFixed(1);
             document.getElementById('strengthScore').textContent = scores.strength.toFixed(1);
             document.getElementById('enduranceScore').textContent = scores.endurance.toFixed(1);
+            document.getElementById('additionScore_strength').textContent = scores.addition_strength.toFixed(1);
+            document.getElementById('additionScore_endurance').textContent = scores.addition_endurance.toFixed(1);
         }
     </script>
 </body>
