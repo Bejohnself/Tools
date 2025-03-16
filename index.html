@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 
 <head>
-    <title>¹şÉîÌå²â³É¼¨¼ÆËãÆ÷</title>
+    <title>å“ˆæ·±ä½“æµ‹æˆç»©è®¡ç®—å™¨</title>
     <style>
         :root {
             --primary: #2196F3;
@@ -111,87 +111,87 @@
 
 <body>
     <div class="calculator">
-        <h2>¹şÉîÌå²â³É¼¨¼ÆËãÆ÷</h2>
+        <h2>å“ˆæ·±ä½“æµ‹æˆç»©è®¡ç®—å™¨</h2>
         <div class="input-row">
             <div class="input-group">
-                <label>ĞÔ±ğ</label>
+                <label>æ€§åˆ«</label>
                 <select id="gender">
-                    <option value="male">ÄĞÉú</option>
-                    <option value="female">Å®Éú</option>
+                    <option value="male">ç”·ç”Ÿ</option>
+                    <option value="female">å¥³ç”Ÿ</option>
                 </select>
             </div>
             <div class="input-group">
-                <label>Äê¼¶</label>
+                <label>å¹´çº§</label>
                 <select id="grade">
-                    <option value="1-2">´óÒ»/´ó¶ş</option>
-                    <option value="3-4">´óÈı/´óËÄ</option>
+                    <option value="1-2">å¤§ä¸€/å¤§äºŒ</option>
+                    <option value="3-4">å¤§ä¸‰/å¤§å››</option>
                 </select>
             </div>
             <div class="input-group">
-                <label>Éí¸ß£¨cm£©</label>
+                <label>èº«é«˜ï¼ˆcmï¼‰</label>
                 <input type="number" id="height" step="0.1">
             </div>
             <div class="input-group">
-                <label>ÌåÖØ£¨kg£©</label>
+                <label>ä½“é‡ï¼ˆkgï¼‰</label>
                 <input type="number" id="weight" step="0.1">
             </div>
             <div class="input-group">
-                <label id="vitalLabel">·Î»îÁ¿£¨ml£©</label>
+                <label id="vitalLabel">è‚ºæ´»é‡ï¼ˆmlï¼‰</label>
                 <input type="number" id="vitalCapacity">
             </div>
             <div class="input-group">
-                <label>50Ã×ÅÜ£¨Ãë£©</label>
+                <label>50ç±³è·‘ï¼ˆç§’ï¼‰</label>
                 <input type="number" id="sprint" step="0.1">
             </div>
             <div class="input-group">
-                <label>×øÎ»ÌåÇ°Çü£¨cm£©</label>
+                <label>åä½ä½“å‰å±ˆï¼ˆcmï¼‰</label>
                 <input type="number" id="sitReach" step="0.1">
             </div>
             <div class="input-group">
-                <label>Á¢¶¨ÌøÔ¶£¨cm£©</label>
+                <label>ç«‹å®šè·³è¿œï¼ˆcmï¼‰</label>
                 <input type="number" id="jump">
             </div>
             <div class="input-group">
-                <label id="strengthLabel">ÒıÌåÏòÉÏ£¨´ÎÊı£©</label>
+                <label id="strengthLabel">å¼•ä½“å‘ä¸Šï¼ˆæ¬¡æ•°ï¼‰</label>
                 <input type="number" id="strength">
             </div>
             <div class="input-group">
-                <label id="enduranceLabel">1000Ã×ÅÜ£¨Ãë£©</label>
+                <label id="enduranceLabel">1000ç±³è·‘ï¼ˆç§’ï¼‰</label>
                 <input type="number" id="endurance" step="0.1">
             </div>
         </div>
-        <button onclick="calculate()">Á¢¼´¼ÆËã³É¼¨</button>
+        <button onclick="calculate()">ç«‹å³è®¡ç®—æˆç»©</button>
         <div class="result-card" id="result" style="display: none;">
             <div class="score-display">
-                ×Ü·Ö£º<span id="totalScore">0</span>·Ö
-                <span class="grade-badge" id="gradeBadge">ÓÅĞã</span>
+                æ€»åˆ†ï¼š<span id="totalScore">0</span>åˆ†
+                <span class="grade-badge" id="gradeBadge">ä¼˜ç§€</span>
             </div>
             <div class="detail-item">
-                <span>BMIµÃ·Ö(15%)</span>
+                <span>BMIå¾—åˆ†(15%)</span>
                 <span id="bmiValue">0.0</span>
             </div>
             <div class="detail-item">
-                <span>·Î»îÁ¿µÃ·Ö(15%)</span>
+                <span>è‚ºæ´»é‡å¾—åˆ†(15%)</span>
                 <span id="vitalScore">0</span>
             </div>
             <div class="detail-item">
-                <span>50Ã×ÅÜµÃ·Ö(20%)</span>
+                <span>50ç±³è·‘å¾—åˆ†(20%)</span>
                 <span id="sprintScore">0</span>
             </div>
             <div class="detail-item">
-                <span>×øÎ»ÌåÇ°ÇüµÃ·Ö(10%)</span>
+                <span>åä½ä½“å‰å±ˆå¾—åˆ†(10%)</span>
                 <span id="sitReachScore">0</span>
             </div>
             <div class="detail-item">
-                <span>Á¢¶¨ÌøÔ¶µÃ·Ö(10%)</span>
+                <span>ç«‹å®šè·³è¿œå¾—åˆ†(10%)</span>
                 <span id="jumpScore">0</span>
             </div>
             <div class="detail-item">
-                <span id="strengthType">ÒıÌåÏòÉÏµÃ·Ö(10%)</span>
+                <span id="strengthType">å¼•ä½“å‘ä¸Šå¾—åˆ†(10%)</span>
                 <span id="strengthScore">0</span>
             </div>
             <div class="detail-item">
-                <span id="enduranceType">ÄÍÁ¦ÅÜµÃ·Ö(20%)</span>
+                <span id="enduranceType">è€åŠ›è·‘å¾—åˆ†(20%)</span>
                 <span id="enduranceScore">0</span>
             </div>
         </div>
@@ -200,10 +200,10 @@
         const genderSelect = document.getElementById('gender');
         const gradeSelect = document.getElementById('grade');
 
-        // ³õÊ¼»¯Ê±¸üĞÂ±êÇ©
+        // åˆå§‹åŒ–æ—¶æ›´æ–°æ ‡ç­¾
         updateLabels();
 
-        // ¼àÌıĞÔ±ğºÍÄê¼¶±ä»¯
+        // ç›‘å¬æ€§åˆ«å’Œå¹´çº§å˜åŒ–
         genderSelect.addEventListener('change', updateLabels);
         gradeSelect.addEventListener('change', updateLabels);
 
@@ -211,17 +211,17 @@
             const isMale = genderSelect.value === 'male';
             const grade = gradeSelect.value;
 
-            // ¸üĞÂÁ¦Á¿ÏîÄ¿±êÇ©
+            // æ›´æ–°åŠ›é‡é¡¹ç›®æ ‡ç­¾
             document.getElementById('strengthLabel').textContent =
-                isMale ? 'ÒıÌåÏòÉÏ£¨´ÎÊı£©' : 'ÑöÎÔÆğ×ø£¨´ÎÊı£©';
+                isMale ? 'å¼•ä½“å‘ä¸Šï¼ˆæ¬¡æ•°ï¼‰' : 'ä»°å§èµ·åï¼ˆæ¬¡æ•°ï¼‰';
             document.getElementById('strengthType').textContent =
-                isMale ? 'ÒıÌåÏòÉÏµÃ·Ö(10%)' : 'ÑöÎÔÆğ×øµÃ·Ö(10%)';
+                isMale ? 'å¼•ä½“å‘ä¸Šå¾—åˆ†(10%)' : 'ä»°å§èµ·åå¾—åˆ†(10%)';
 
-            // ¸üĞÂÄÍÁ¦ÅÜ±êÇ©
+            // æ›´æ–°è€åŠ›è·‘æ ‡ç­¾
             document.getElementById('enduranceLabel').textContent =
-                isMale ? '1000Ã×ÅÜ£¨Ãë£©' : '800Ã×ÅÜ£¨Ãë£©';
+                isMale ? '1000ç±³è·‘ï¼ˆç§’ï¼‰' : '800ç±³è·‘ï¼ˆç§’ï¼‰';
             document.getElementById('enduranceType').textContent =
-                isMale ? '1000Ã×ÅÜµÃ·Ö(20%)' : '800Ã×ÅÜµÃ·Ö(20%)';
+                isMale ? '1000ç±³è·‘å¾—åˆ†(20%)' : '800ç±³è·‘å¾—åˆ†(20%)';
         }
 
         function validateInputs(inputs) {
@@ -233,19 +233,19 @@
             for (const field of requiredFields) {
                 if (field === 'strength') {
                     if (isNaN(inputs[field]) || inputs[field] < 0) {
-                        alert(`ÇëÕıÈ·ÌîĞ´${getFieldLabel(field)}`);
+                        alert(`è¯·æ­£ç¡®å¡«å†™${getFieldLabel(field)}`);
                         return false;
                     }
                 }
                 else if (field === 'sitReach') {
                     if (isNaN(inputs[field])) {
-                        alert(`ÇëÕıÈ·ÌîĞ´${getFieldLabel(field)}`);
+                        alert(`è¯·æ­£ç¡®å¡«å†™${getFieldLabel(field)}`);
                         return false;
                     }
                 }
                 else {
                     if (isNaN(inputs[field]) || inputs[field] <= 0) {
-                        alert(`ÇëÕıÈ·ÌîĞ´${getFieldLabel(field)}`);
+                        alert(`è¯·æ­£ç¡®å¡«å†™${getFieldLabel(field)}`);
                         return false;
                     }
                 }
@@ -255,10 +255,10 @@
 
         function getFieldLabel(field) {
             const labels = {
-                height: "Éí¸ß", weight: "ÌåÖØ",
-                vitalCapacity: "·Î»îÁ¿´óĞ¡", sprint: "50Ã×ÅÜÊ±¼ä",
-                sitReach: "×øÎ»ÌåÇ°Çü³¤¶È", jump: "Á¢¶¨ÌøÔ¶¾àÀë",
-                strength: "ÒıÌåÏòÉÏ/ÑöÎÔÆğ×ø¸öÊı", endurance: "ÄÍÁ¦ÅÜÊ±¼ä"
+                height: "èº«é«˜", weight: "ä½“é‡",
+                vitalCapacity: "è‚ºæ´»é‡å¤§å°", sprint: "50ç±³è·‘æ—¶é—´",
+                sitReach: "åä½ä½“å‰å±ˆé•¿åº¦", jump: "ç«‹å®šè·³è¿œè·ç¦»",
+                strength: "å¼•ä½“å‘ä¸Š/ä»°å§èµ·åä¸ªæ•°", endurance: "è€åŠ›è·‘æ—¶é—´"
             };
             return labels[field];
         }
@@ -279,7 +279,7 @@
 
             if (!validateInputs(inputs)) return;
 
-            // ¶¨ÒåÏßĞÔ²åÖµº¯Êı
+            // å®šä¹‰çº¿æ€§æ’å€¼å‡½æ•°
             function linearInterpolation(x, x1, k, y0) {
                 return (1 / k) * Math.abs(x - x1) + y0;
             }
@@ -320,7 +320,7 @@
                 return score;
             }
 
-            // ¼ÆËãBMI
+            // è®¡ç®—BMI
             const bmi = inputs.weight / ((inputs.height / 100) ** 2);
             const bmiRanges = {
                 male: { underweight: 17.8, normal: 23.9, overweight: 27.9 },
@@ -341,7 +341,7 @@
             }
 
 
-            // ¼ÆËã·Î»îÁ¿µÃ·Ö
+            // è®¡ç®—è‚ºæ´»é‡å¾—åˆ†
             const vitalCapacity = inputs.vitalCapacity;
             let vitalScore = 0;
             if (gender === 'male') {
@@ -367,7 +367,7 @@
             }
             vitalScore = piecewise_calculateScore(cutting_points, cutting_scores, between_k, vitalCapacity);
 
-            // ¼ÆËã¶ÌÅÜµÃ·Ö
+            // è®¡ç®—çŸ­è·‘å¾—åˆ†
             const sprint = inputs.sprint;
             let sprintScore = 0;
             if (gender === 'male') {
@@ -394,7 +394,7 @@
             sprintScore = piecewise_calculateScore(cutting_points, cutting_scores, between_k, sprint);
 
 
-            // ¼ÆËã×øÎ»ÌåÇ°ÇüµÃ·Ö
+            // è®¡ç®—åä½ä½“å‰å±ˆå¾—åˆ†
             const sitReach = inputs.sitReach;
             let sitReachScore = 0;
             if (gender === 'male') {
@@ -420,7 +420,7 @@
             }
             sitReachScore = piecewise_calculateScore(cutting_points, cutting_scores, between_k, sitReach);
 
-            // ¼ÆËãÁ¢¶¨ÌøÔ¶µÃ·Ö
+            // è®¡ç®—ç«‹å®šè·³è¿œå¾—åˆ†
             const jump = inputs.jump;
             let jumpScore = 0;
             if (gender === 'male') {
@@ -447,7 +447,7 @@
             jumpScore = piecewise_calculateScore(cutting_points, cutting_scores, between_k, jump);
 
 
-            // ¼ÆËãÒıÌåÏòÉÏ¡¢ÑöÎÔÆğ×øµÃ·Ö
+            // è®¡ç®—å¼•ä½“å‘ä¸Šã€ä»°å§èµ·åå¾—åˆ†
             const strength = inputs.strength;
             let strengthScore = 0;
             if (gender === 'male') {
@@ -473,7 +473,7 @@
             }
             strengthScore = piecewise_calculateScore(cutting_points, cutting_scores, between_k, strength);
 
-            // ¼ÆËãÖĞ³¤ÅÜµÃ·Ö
+            // è®¡ç®—ä¸­é•¿è·‘å¾—åˆ†
             const endurance = inputs.endurance;
             let enduranceScore = 0;
             if (gender === 'male') {
@@ -499,7 +499,7 @@
             }
             enduranceScore = piecewise_calculateScore(cutting_points, cutting_scores, between_k, endurance);
 
-            // ¼ÆËã¸÷ÏîÄ¿µÃ·Ö
+            // è®¡ç®—å„é¡¹ç›®å¾—åˆ†
             const scores = {
                 bmi: bmiScore,
                 vitalCapacity: vitalScore,
@@ -510,7 +510,7 @@
                 endurance: enduranceScore
             };
 
-            // ×Ü·Ö¼ÆËã£¨±£Áô1Î»Ğ¡Êı£©
+            // æ€»åˆ†è®¡ç®—ï¼ˆä¿ç•™1ä½å°æ•°ï¼‰
             const total = (
                 scores.bmi * 0.15 +
                 scores.vitalCapacity * 0.15 +
@@ -521,13 +521,13 @@
                 scores.endurance * 0.20
             ).toFixed(1);
 
-            // È·¶¨µÈ¼¶
-            let gradeLevel = '·Ç³£ÒÅº¶£¬²»¼°¸ñ';
-            if (total >= 90) gradeLevel = 'Ì«Ç¿ÁË£¡£¡';
-            else if (total >= 65) gradeLevel = '²»´íßÏ£¡';
-            else if (total >= 60) gradeLevel = '¼°¸ñÍòËê£¡';
+            // ç¡®å®šç­‰çº§
+            let gradeLevel = 'éå¸¸é—æ†¾ï¼Œä¸åŠæ ¼';
+            if (total >= 90) gradeLevel = 'å¤ªå¼ºäº†ï¼ï¼';
+            else if (total >= 65) gradeLevel = 'ä¸é”™å‘¦ï¼';
+            else if (total >= 60) gradeLevel = 'åŠæ ¼ä¸‡å²ï¼';
 
-            // ¸üĞÂÏÔÊ¾
+            // æ›´æ–°æ˜¾ç¤º
             const result = document.getElementById('result');
             result.style.display = 'block';
             document.getElementById('totalScore').textContent = total;
