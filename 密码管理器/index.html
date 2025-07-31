@@ -457,31 +457,40 @@ website,username,password,notes
         <form id="changeMasterPasswordForm" class="settings-form">
             <!-- 旧主密码输入 -->
             <div class="input-group">
-                <label for="oldMasterPassword">🔑 旧主密码 *</label>
+                <label for="oldMasterPassword" aria-label="旧主密码">🔑 旧主密码 *</label>
                 <div class="password-input">
                     <input type="password" id="oldMasterPassword" placeholder="请输入当前主密码" required>
-                    <button type="button" class="toggle-password"
-                        onclick="togglePasswordVisibilityInput('oldMasterPassword')">👁️</button>
+                    <button type="button" class="toggle-password" 
+                        onclick="togglePasswordVisibilityInput('oldMasterPassword')"
+                        aria-label="切换密码可见性">
+                        👁️
+                    </button>
                 </div>
             </div>
 
             <!-- 新主密码输入 -->
             <div class="input-group">
-                <label for="newMasterPassword">🔑 新主密码 *</label>
+                <label for="newMasterPassword" aria-label="新主密码">🔑 新主密码 *</label>
                 <div class="password-input">
                     <input type="password" id="newMasterPassword" placeholder="请输入新主密码（至少6位）" required>
-                    <button type="button" class="toggle-password"
-                        onclick="togglePasswordVisibilityInput('newMasterPassword')">👁️</button>
+                    <button type="button" class="toggle-password" 
+                        onclick="togglePasswordVisibilityInput('newMasterPassword')"
+                        aria-label="切换密码可见性">
+                        👁️
+                    </button>
                 </div>
             </div>
 
             <!-- 确认新主密码输入 -->
             <div class="input-group">
-                <label for="confirmMasterPassword">🔑 确认新主密码 *</label>
+                <label for="confirmMasterPassword" aria-label="确认新主密码">🔑 确认新主密码 *</label>
                 <div class="password-input">
                     <input type="password" id="confirmMasterPassword" placeholder="请再次输入新主密码" required>
-                    <button type="button" class="toggle-password"
-                        onclick="togglePasswordVisibilityInput('confirmMasterPassword')">👁️</button>
+                    <button type="button" class="toggle-password" 
+                        onclick="togglePasswordVisibilityInput('confirmMasterPassword')"
+                        aria-label="切换密码可见性">
+                        👁️
+                    </button>
                 </div>
             </div>
 
