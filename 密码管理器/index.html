@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>密码管理器</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- 原代码 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <!-- 新增 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+</head>
+
+<body>
+    <header>
+    </header>
+    <!-- 主题选择器 -->
+    <div class="theme-selector" id="themeSelector">
+        <div class="theme-options">
+            <button class="theme-btn" data-theme="misty-blue" title="雾霭蓝">
+                <span class="theme-color misty-blue"></span>
+            </button>
+            <button class="theme-btn" data-theme="peach-pink" title="蜜桃粉">
+                <span class="theme-color peach-pink"></span>
+            </button>
+            <button class="theme-btn" data-theme="pine-green" title="松针绿">
+                <span class="theme-color pine-green"></span>
+            </button>
+            <button class="theme-btn" data-theme="night-black" title="星夜黑">
+                <span class="theme-color night-black"></span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 登录页面 -->
+    <div class="page" id="loginPage">
+        <div class="login-container glass-card">
+            <div class="login-header">
+                <div class="logo">
+                    🔐
+                </div>
+                <h1>Be的密码管理器</h1>
+                <p class="subtitle">安全、便捷的本地密码管理</p>
+            </div>
+
+            <form id="loginForm" class="login-form">
+                <div class="input-group">
+                    <label for="masterPassword">
+                        🔑 主密码
+                    </label>
+                    <div class="password-input">
+                        <input type="password" id="masterPassword" placeholder="哥们暗语" required>
+                        <button type="button" class="toggle-password"
+                            onclick="togglePasswordVisibilityInput('masterPassword')">
+                            👁️
+                        </button>
+                    </div>
+                </div>
+
+                <button type="submit" class="login-btn">
+                    🔐 安全登录
+                </button>
+
+                <div class="security-tips">
+                    <div class="tip-item">
+                        🛡️ 所有数据本地加密存储
+                    </div>
+                    <div class="tip-item">
+                        🔄 支持数据备份与恢复
+                    </div>
+                </div>
+
+                <div class="error-message" id="errorMessage">
+                    ⚠️ 密码错误，请重试！
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 主页面 -->
+    <div class="page" id="mainPage">
+        <div class="dashboard-container">
+            <div class="dashboard-header">
+                <div class="header-content">
+                    <h1>🔐 Be的密码管理中心</h1>
+                    <div class="user-actions">
+                        <button class="action-btn" onclick="showSettings()" title="设置">
+                            ⚙️
+                        </button>
+                        <button class="action-btn" onclick="toggleShortcutHelp()" title="快捷键说明">
+                            💡
+                        </button>
+                        <button class="logout-btn" onclick="logout()" title="退出">
+                            🚪 退出
+                        </button>
+                    </div>
+                </div>
+
+                <div class="stats-cards">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            🔑
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="totalPasswords">0</div>
+                            <div class="stat-label">总密码数</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            📈
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-number" id="todayAdded">0</div>
+                            <div class="stat-label">今日新增</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="main-menu">
+                <div class="menu-grid">
+                    <div class="menu-card" onclick="showView('query')">
+                        <div class="card-icon primary">
+                            🔍
+                        </div>
+                        <div class="card-content">
+                            <h2>查询密码</h2>
+                            <p>快速搜索和管理您的密码</p>
+                        </div>
+                        <div class="card-footer">
+                            <span class="card-action">立即查看</span>
+                            →
+                        </div>
+                    </div>
+
+                    <div class="menu-card" onclick="showView('add')">
+                        <div class="card-icon success">
+                            ➕
+                        </div>
+                        <div class="card-content">
+                            <h2>添加密码</h2>
+                            <p>新增单个或批量导入密码</p>
+                        </div>
+                        <div class="card-footer">
+                            <span class="card-action">开始添加</span>
+                            →
+                        </div>
+                    </div>
+
+                    <div class="menu-card" onclick="showView('export')">
+                        <div class="card-icon warning">
+                            📤
+                        </div>
+                        <div class="card-content">
+                            <h2>导出数据</h2>
+                            <p>备份和导出您的密码数据</p>
+                        </div>
+                        <div class="card-footer">
+                            <span class="card-action">立即导出</span>
+                            →
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 查询页面 -->
+    <div class="page" id="queryPage">
+        <div class="content-container glass-card">
+            <div class="page-header">
+                <button class="back-btn" onclick="showMainPage()">
+                    ← 返回
+                </button>
+                <h2>🔍 密码查询</h2>
+            </div>
+
+            <div class="search-section">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="搜索网站名称或用户名...">
+                    <button onclick="searchPasswords()">
+                        🔍 搜索
+                    </button>
+                </div>
+
+                <div class="filter-options">
+                    <button class="filter-btn active" data-filter="all">
+                        📋 全部
+                    </button>
+                    <!-- <button class="filter-btn" data-filter="recent">
+                        🕐 最近
+                    </button> -->
+                </div>
+            </div>
+
+            <div class="results-section">
+                <div class="results-header">
+                    <span id="resultsCount">0</span> 条结果
+                    <div class="results-actions">
+                        <button class="action-btn small" onclick="refreshResults()">
+                            🔄
+                        </button>
+                        <!-- 新增删除全部按钮 -->
+                        <button class="action-btn small btn-danger" onclick="deleteAllPasswords()">
+                            🗑️ 全部删除
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table id="passwordTable">
+                        <thead>
+                            <tr>
+                                <th>🌐 网站</th>
+                                <th>👤 用户名</th>
+                                <th>🔒 密码</th>
+                                <th>📝 备注</th>
+                                <th>⚙️ 操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="passwordList">
+                            <tr>
+                                <td colspan="5" class="empty-state">
+                                    🔍
+                                    <p>请输入搜索关键词开始查询</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加页面 -->
+    <div class="page" id="addPage">
+        <div class="content-container glass-card">
+            <div class="page-header">
+                <button class="back-btn" onclick="showMainPage()">
+                    ← 返回
+                </button>
+                <h2>➕ 添加密码</h2>
+            </div>
+
+            <div class="tab-container">
+                <div class="tab-header">
+                    <button class="tab-btn active" onclick="switchTab('single')">
+                        ✏️ 单条添加
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('batch')">
+                        📥 批量导入
+                    </button>
+                </div>
+
+                <!-- 单条添加 -->
+                <div class="tab-content" id="singleTab">
+                    <form id="passwordForm" class="add-form">
+                        <input type="hidden" id="editId">
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="website">
+                                    🌐 网站名称 *
+                                </label>
+                                <input type="text" id="website" placeholder="例如：github.com" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="username">
+                                    👤 用户名 *
+                                </label>
+                                <input type="text" id="username" placeholder="您的用户名" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="password">
+                                    🔒 密码 *
+                                </label>
+                                <div class="password-input">
+                                    <input type="password" id="password" placeholder="输入密码" required>
+                                    <button type="button" class="toggle-password"
+                                        onclick="togglePasswordVisibilityInput('password')">
+                                        👁️
+                                    </button>
+                                    <button type="button" class="generate-password" onclick="generatePassword()">
+                                        ✨
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="notes">
+                                    📝 备注
+                                </label>
+                                <textarea id="notes" rows="3" placeholder="添加备注信息"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" id="cancelBtn" class="secondary-btn" style="display: none;">
+                                ❌ 取消
+                            </button>
+                            <button type="submit" id="saveBtn" class="primary-btn">
+                                💾 添加密码
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 批量导入 -->
+                <div class="tab-content" id="batchTab" style="display: none;">
+                    <div class="batch-import">
+                        <div class="import-header">
+                            <h3>📥 批量导入密码</h3>
+                            <p>支持JSON格式文件导入</p>
+                        </div>
+
+                        <div class="import-instructions">
+                            <div class="instruction-card">
+                                <h4>文件格式要求</h4>
+                                <p>支持JSON和CSV格式（建议使用UTF-8编码保存文件）：</p>
+                                <h5>JSON示例：</h5>
+                                <pre class="code-block">
+[
+    {
+        "website": "微信",
+        "username": "张三",
+        "password": "wechat123",
+        "notes": "个人微信账号"
+    }
+]</pre>
+                                <h5>CSV示例（UTF-8编码）：</h5>
+                                <pre class="code-block">
+website,username,password,notes
+
+微信,张三,wechat123,个人微信账号
+支付宝,李四,alipay456,常用支付账号
+"带,逗号的网站",王五,p@ssw0rd,"备注中包含,逗号的情况"</pre>
+                            </div>
+
+                            <div class="instruction-card">
+                                <h4>操作步骤</h4>
+                                <ol>
+                                    <li>准备符合格式的JSON文件</li>
+                                    <li>点击下方按钮选择文件</li>
+                                    <li>确认导入的数据</li>
+                                    <li>完成导入操作</li>
+                                </ol>
+
+                                <!-- 按钮移动到操作步骤列表的正下方 -->
+                                <div class="import-actions" style="margin-bottom: 15px; text-align: center;">
+                                    <button class="primary-btn" onclick="document.getElementById('importFile').click()">
+                                        📁 选择文件
+                                    </button>
+                                    <input type="file" id="importFile" accept=".json,.csv" style="display: none;"
+                                        onchange="importData(event)">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="importResult" class="import-result"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 导出页面 -->
+    <div class="page" id="exportPage">
+        <div class="content-container glass-card">
+            <div class="page-header">
+                <button class="back-btn" onclick="showMainPage()">
+                    ← 返回
+                </button>
+                <h2>📤 数据导出</h2>
+            </div>
+
+            <div class="export-options">
+                <div class="export-grid">
+                    <div class="export-card" onclick="exportAllData()">
+                        <div class="card-icon large success">
+                            💾
+                        </div>
+                        <div class="card-content">
+                            <h3>导出所有数据</h3>
+                            <p>备份完整的密码数据库</p>
+                            <div class="card-stats">
+                                <span class="stat-badge">JSON格式</span>
+                                <span class="stat-badge">完整备份</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="export-card" onclick="exportFilteredData()">
+                        <div class="card-icon large warning">
+                            🔍
+                        </div>
+                        <div class="card-content">
+                            <h3>导出搜索结果</h3>
+                            <p>导出当前搜索条件下的数据</p>
+                            <div class="card-stats">
+                                <span class="stat-badge">按条件</span>
+                                <span class="stat-badge">部分数据</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="export-card" onclick="showExportSearch()">
+                        <div class="card-icon large info">
+                            ⚙️
+                        </div>
+                        <div class="card-content">
+                            <h3>按条件导出</h3>
+                            <p>自定义搜索条件导出</p>
+                            <div class="card-stats">
+                                <span class="stat-badge">高级筛选</span>
+                                <span class="stat-badge">精准导出</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="export-search" id="exportSearchSection" style="display: none;">
+                    <div class="search-box">
+                        <input type="text" id="exportSearch" placeholder="输入搜索关键词...">
+                        <button onclick="exportBySearch()">
+                            📤 导出匹配数据
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 通知提示 -->
+    <div id="notification" class="notification"></div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
+
+<!-- 新增：设置页面 -->
+<div class="page" id="settingsPage">
+    <div class="content-container glass-card">
+        <div class="page-header">
+            <button class="back-btn" onclick="showMainPage()">← 返回</button>
+            <h2>⚙️ 账户设置</h2>
+        </div>
+
+        <form id="changeMasterPasswordForm" class="settings-form">
+            <!-- 旧主密码输入 -->
+            <div class="input-group">
+                <label for="oldMasterPassword">🔑 旧主密码 *</label>
+                <div class="password-input">
+                    <input type="password" id="oldMasterPassword" placeholder="请输入当前主密码" required>
+                    <button type="button" class="toggle-password"
+                        onclick="togglePasswordVisibilityInput('oldMasterPassword')">👁️</button>
+                </div>
+            </div>
+
+            <!-- 新主密码输入 -->
+            <div class="input-group">
+                <label for="newMasterPassword">🔑 新主密码 *</label>
+                <div class="password-input">
+                    <input type="password" id="newMasterPassword" placeholder="请输入新主密码（至少6位）" required>
+                    <button type="button" class="toggle-password"
+                        onclick="togglePasswordVisibilityInput('newMasterPassword')">👁️</button>
+                </div>
+            </div>
+
+            <!-- 确认新主密码输入 -->
+            <div class="input-group">
+                <label for="confirmMasterPassword">🔑 确认新主密码 *</label>
+                <div class="password-input">
+                    <input type="password" id="confirmMasterPassword" placeholder="请再次输入新主密码" required>
+                    <button type="button" class="toggle-password"
+                        onclick="togglePasswordVisibilityInput('confirmMasterPassword')">👁️</button>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="primary-btn">💾 修改主密码</button>
+            </div>
+            <div class="error-message" id="changePasswordError"
+                style="display: none; color: #e63946; margin-top: 15px;"></div>
+        </form>
+    </div>
+</div>
+
+<!-- 新增：快捷键说明弹窗 -->
+<div id="shortcutHelpModal" class="modal" style="display: none;">
+    <div class="modal-content glass-card">
+        <div class="modal-header">
+            <h2>⌨️ 快捷键说明</h2>
+            <button class="close-btn" onclick="toggleShortcutHelp()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="shortcut-section">
+                <h3>导航快捷键</h3>
+                <ul class="shortcut-list">
+                    <li><kbd>A</kbd> - 跳转到查询密码页面</li>
+                    <li><kbd>S</kbd> - 跳转到添加密码页面</li>
+                    <li><kbd>D</kbd> - 跳转到导出数据页面</li>
+                    <li><kbd>←</kbd> (左箭头) - 返回主页面</li>
+                    <li><kbd>Enter</kbd> - 聚焦到当前页面的第一个输入框</li>
+                </ul>
+            </div>
+            
+            <div class="shortcut-section">
+                <h3>功能快捷键</h3>
+                <ul class="shortcut-list">
+                    <li><kbd>Tab</kbd> - 在输入框之间切换</li>
+                    <li><kbd>Enter</kbd> (在搜索框中) - 执行搜索</li>
+                    <li><kbd>Esc</kbd> - 退出输入框，启用其他快捷键</li>
+                </ul>
+            </div>
+            
+            <div class="shortcut-section">
+                <h3>注意事项</h3>
+                <ul class="shortcut-list">
+                    <li>快捷键在主页面和各功能页面中生效</li>
+                    <li>输入框中不会触发页面导航快捷键</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
