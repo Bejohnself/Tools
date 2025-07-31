@@ -206,8 +206,10 @@ body {
    卡片样式
    ==================== */
 
+/* 修改玻璃卡片样式，添加Safari兼容前缀 */
 .glass-card {
     background: var(--card-background);
+    -webkit-backdrop-filter: blur(10px); /* 添加WebKit前缀 */
     backdrop-filter: blur(10px);
     border: 1px solid var(--glass-border);
     border-radius: 20px;
@@ -1368,8 +1370,10 @@ tr:hover {
     z-index: 1000;
 }
 
+/* 修改模态框内容样式，添加Safari兼容前缀 */
 .modal-content {
-    background: var(--card-background); /* 使用主题卡片背景色 */
+    background: var(--card-background);
+    -webkit-backdrop-filter: blur(10px); /* 添加WebKit前缀 */
     backdrop-filter: blur(10px);
     border: 1px solid var(--glass-border);
     border-radius: 15px;
