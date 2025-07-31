@@ -42,6 +42,11 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    // 强制初始化显示登录页面
+    if (!loginPage.classList.contains('active')) {
+        loginPage.classList.add('active');
+    }
+
     checkAuthStatus();
 
     // 事件监听
@@ -123,7 +128,10 @@ function simpleHash(str) {
 function checkAuthStatus() {
     const storedHash = localStorage.getItem(MASTER_PASSWORD_KEY);
     if (storedHash) {
+        // 显示登录页面
         showPage('loginPage');
+        // 强制将登录表单设置为当前活动页面
+        document.getElementById('loginPage').classList.add('active');
     } else {
         showSetMasterPassword();
     }
@@ -661,22 +669,22 @@ function resetForm() {
     cancelBtn.style.display = 'none';
 }
 
-// 切换密码显示/隐藏（表格中）
+// 修改显示密码函数，添加ARIA属性更新
 function togglePasswordVisibility(button) {
     const passwordSpan = button.previousElementSibling;
-
+    
     if (passwordSpan.classList.contains('hidden-password')) {
         passwordSpan.classList.remove('hidden-password');
         button.innerHTML = '🙈';
-        button.title = '隐藏密码';
+        button.setAttribute('aria-label', '隐藏密码');
     } else {
         passwordSpan.classList.add('hidden-password');
         button.innerHTML = '👁️';
-        button.title = '显示密码';
+        button.setAttribute('aria-label', '显示密码');
     }
 }
 
-// 切换密码输入框显示/隐藏
+// 修改切换密码输入框显示/隐藏函数，添加ARIA属性更新
 function togglePasswordVisibilityInput(inputId) {
     const input = document.getElementById(inputId);
     const button = input.nextElementSibling || input.parentElement.querySelector('.toggle-password');
@@ -684,9 +692,11 @@ function togglePasswordVisibilityInput(inputId) {
     if (input.type === 'password') {
         input.type = 'text';
         button.innerHTML = '🙈';
+        button.setAttribute('aria-label', '隐藏密码');
     } else {
         input.type = 'password';
         button.innerHTML = '👁️';
+        button.setAttribute('aria-label', '显示密码');
     }
 }
 
