@@ -2,11 +2,24 @@
 const MASTER_PASSWORD_KEY = 'master_password_hash';
 const PASSWORDS_KEY = 'encrypted_passwords';
 const THEME_KEY = 'preferred_theme';
+const CUSTOM_KEYS_KEY = 'custom_keys'; // 新增自定义快捷键存储键
 
 // 当前会话状态
 let isAuthenticated = false;
 let passwords = [];
 let currentView = 'main';
+
+// 默认快捷键设置
+const DEFAULT_KEYS = {
+    query: 'a',
+    add: 's',
+    export: 'd',
+    back: 'arrowleft',
+    exitInput: 'escape'
+};
+
+// 当前快捷键设置
+let customKeys = {...DEFAULT_KEYS};
 
 // DOM 元素
 let loginPage, mainPage, queryPage, addPage, exportPage;
@@ -33,6 +46,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // 初始化主题
     initTheme();
+
+    // 初始化自定义快捷键
+    initCustomKeys();
 
     // 绑定主题切换事件
     document.querySelectorAll('.theme-btn').forEach(btn => {
@@ -70,7 +86,112 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // 取消编辑事件
     cancelBtn.addEventListener('click', cancelEdit);
+
+    // 为快捷键输入框添加事件监听器
+    setupKeyInputListeners();
 });
+
+// 初始化自定义快捷键
+function initCustomKeys() {
+    const savedKeys = localStorage.getItem(CUSTOM_KEYS_KEY);
+    if (savedKeys) {
+        try {
+            customKeys = JSON.parse(savedKeys);
+        } catch (e) {
+            console.error('Failed to parse custom keys, using defaults');
+            customKeys = {...DEFAULT_KEYS};
+        }
+    }
+    
+    // 在设置页面显示当前快捷键
+    if (document.getElementById('queryKey')) {
+        document.getElementById('queryKey').value = customKeys.query === 'arrowleft' ? '←' : customKeys.query;
+        document.getElementById('addKey').value = customKeys.add;
+        document.getElementById('exportKey').value = customKeys.export;
+        document.getElementById('backKey').value = customKeys.back === 'arrowleft' ? '←' : customKeys.back;
+        document.getElementById('exitInputKey').value = customKeys.exitInput === 'escape' ? 'Esc' : customKeys.exitInput;
+    }
+}
+
+// 设置快捷键输入框监听器
+function setupKeyInputListeners() {
+    const keyInputs = document.querySelectorAll('.key-input');
+    keyInputs.forEach(input => {
+        input.addEventListener('keydown', function(e) {
+            e.preventDefault();
+            // 处理特殊键
+            if (e.key === 'ArrowLeft') {
+                this.value = '←';
+                this.dataset.keyValue = 'arrowleft';
+            } else if (e.key === 'Escape') {
+                this.value = 'Esc';
+                this.dataset.keyValue = 'escape';
+            } else if (e.key === 'Backspace' || e.key === 'Delete') {
+                this.value = '';
+                this.dataset.keyValue = '';
+            } else if (e.key.length === 1) {
+                this.value = e.key.toLowerCase();
+                this.dataset.keyValue = e.key.toLowerCase();
+            }
+        });
+        
+        input.addEventListener('focus', function() {
+            this.classList.add('recording');
+            this.placeholder = '按任意键设置';
+        });
+        
+        input.addEventListener('blur', function() {
+            this.classList.remove('recording');
+            if (!this.value) {
+                this.placeholder = '按任意键设置';
+            }
+        });
+    });
+}
+
+// 保存自定义快捷键
+function saveCustomKeys() {
+    const queryKey = document.getElementById('queryKey').dataset.keyValue || document.getElementById('queryKey').value.toLowerCase();
+    const addKey = document.getElementById('addKey').dataset.keyValue || document.getElementById('addKey').value.toLowerCase();
+    const exportKey = document.getElementById('exportKey').dataset.keyValue || document.getElementById('exportKey').value.toLowerCase();
+    const backKey = document.getElementById('backKey').dataset.keyValue || document.getElementById('backKey').value.toLowerCase();
+    const exitInputKey = document.getElementById('exitInputKey').dataset.keyValue || document.getElementById('exitInputKey').value.toLowerCase();
+    
+    // 简单验证
+    if (!queryKey || !addKey || !exportKey || !backKey || !exitInputKey) {
+        showNotification('所有快捷键都必须设置！', 'error');
+        return;
+    }
+    
+    // 检查重复 (除了特殊键)
+    const navKeys = [queryKey, addKey, exportKey].filter(key => !['arrowleft', 'escape'].includes(key));
+    const hasDuplicates = new Set(navKeys).size !== navKeys.length;
+    
+    if (hasDuplicates) {
+        showNotification('导航快捷键不能重复！', 'error');
+        return;
+    }
+    
+    customKeys = {
+        query: queryKey,
+        add: addKey,
+        export: exportKey,
+        back: backKey,
+        exitInput: exitInputKey
+    };
+    
+    localStorage.setItem(CUSTOM_KEYS_KEY, JSON.stringify(customKeys));
+    showNotification('快捷键设置已保存！');
+}
+
+// 恢复默认快捷键
+function resetDefaultKeys() {
+    customKeys = {...DEFAULT_KEYS};
+    document.getElementById('queryKey').value = customKeys.query;
+    document.getElementById('addKey').value = customKeys.add;
+    document.getElementById('exportKey').value = customKeys.export;
+    showNotification('已恢复默认快捷键');
+}
 
 // 初始化主题
 function initTheme() {
@@ -149,34 +270,33 @@ document.addEventListener('keydown', function(e) {
         return;
     }
     
-    switch(e.key) {
-        case 'a':
-        case 'A':
+    // 使用自定义快捷键或默认快捷键
+    switch(e.key.toLowerCase()) {
+        case customKeys.query:
             e.preventDefault();
             showView('query');
             break;
-        case 's':
-        case 'S':
+        case customKeys.add:
             e.preventDefault();
             showView('add');
             break;
-        case 'd':
-        case 'D':
+        case customKeys.export:
             e.preventDefault();
             showView('export');
             break;
     }
 });
 
-// 添加一个新的键盘事件监听器，专门用于处理返回键（ArrowLeft）
+// 添加一个新的键盘事件监听器，专门用于处理返回键
 document.addEventListener('keydown', function(e) {
     // 阻止在输入框中触发快捷键
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
         return;
     }
     
-    // 检查是否按下了左箭头键
-    if (e.key === 'ArrowLeft') {
+    // 检查是否按下了返回键
+    if (e.key === 'ArrowLeft' && customKeys.back === 'arrowleft' || 
+        e.key.toLowerCase() === customKeys.back && customKeys.back !== 'arrowleft') {
         // 根据当前活动页面执行相应的返回操作
         if (document.getElementById('queryPage').classList.contains('active')) {
             e.preventDefault();
@@ -233,8 +353,10 @@ document.addEventListener('keydown', function(e) {
 
 // 添加Esc键退出输入框的事件监听器
 document.addEventListener('keydown', function(e) {
-    // 仅在输入框或文本区域聚焦时处理Esc键
-    if ((e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') && e.key === 'Escape') {
+    // 仅在输入框或文本区域聚焦时处理退出输入框键
+    if ((e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') && 
+        (e.key === 'Escape' && customKeys.exitInput === 'escape' || 
+         e.key.toLowerCase() === customKeys.exitInput && customKeys.exitInput !== 'escape')) {
         e.preventDefault();
         e.target.blur(); // 移除焦点
         // showNotification('已退出输入框');
@@ -259,6 +381,15 @@ function showPage(pageId) {
     // 特殊处理：当显示查询页面时确保密码列表已加载
     if (pageId === 'queryPage' && isAuthenticated) {
         renderPasswordList();
+    }
+    
+    // 特殊处理：当显示设置页面时更新快捷键显示
+    if (pageId === 'settingsPage') {
+        document.getElementById('queryKey').value = customKeys.query === 'arrowleft' ? '←' : customKeys.query;
+        document.getElementById('addKey').value = customKeys.add;
+        document.getElementById('exportKey').value = customKeys.export;
+        document.getElementById('backKey').value = customKeys.back === 'arrowleft' ? '←' : customKeys.back;
+        document.getElementById('exitInputKey').value = customKeys.exitInput === 'escape' ? 'Esc' : customKeys.exitInput;
     }
 }
 
@@ -439,8 +570,14 @@ function loadPasswords() {
     const encryptedData = localStorage.getItem(PASSWORDS_KEY);
     if (encryptedData) {
         try {
-            passwords = JSON.parse(atob(encryptedData));
+            // 将Base64转换为Uint8Array
+            const byteArray = Uint8Array.from(atob(encryptedData), c => c.charCodeAt(0));
+            // 使用TextDecoder解码UTF-8
+            const decoder = new TextDecoder();
+            const jsonStr = decoder.decode(byteArray);
+            passwords = JSON.parse(jsonStr);
         } catch (e) {
+            console.error('加载密码失败:', e);
             passwords = [];
         }
     } else {
@@ -458,26 +595,6 @@ function savePasswords() {
     const encryptedData = btoa(String.fromCharCode(...data));
     localStorage.setItem(PASSWORDS_KEY, encryptedData);
     updateStats();
-}
-
-// 加载密码数据（修改部分）
-function loadPasswords() {
-    const encryptedData = localStorage.getItem(PASSWORDS_KEY);
-    if (encryptedData) {
-        try {
-            // 将Base64转换为Uint8Array
-            const byteArray = Uint8Array.from(atob(encryptedData), c => c.charCodeAt(0));
-            // 使用TextDecoder解码UTF-8
-            const decoder = new TextDecoder();
-            const jsonStr = decoder.decode(byteArray);
-            passwords = JSON.parse(jsonStr);
-        } catch (e) {
-            console.error('加载密码失败:', e);
-            passwords = [];
-        }
-    } else {
-        passwords = [];
-    }
 }
 
 // 退出函数
@@ -510,10 +627,19 @@ function savePassword() {
     const website = document.getElementById('website').value;
     const username = document.getElementById('username').value;
     const password = document.getElementById('password').value;
-    const notes = document.getElementById('notes').value;
+    let notes = document.getElementById('notes').value.trim();
+    const autoTimestamp = document.getElementById('autoTimestamp').checked;
 
+    // 如果启用自动时间戳则追加时间戳
+    if (autoTimestamp) {
+        const now = new Date();
+        const formattedDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+        notes += ` ${formattedDate}`;
+    }
+
+    // 检查必填字段
     if (!website || !username || !password) {
-        showNotification('请填写所有必填字段！', 'error');
+        showNotification('网站名称、用户名和密码均为必填项！', 'error');
         return;
     }
 
@@ -522,7 +648,6 @@ function savePassword() {
         // 更新时排除当前编辑的记录（通过 editId.value 判断是否为更新操作）
         const isCurrentRecord = editId.value && p.id === editId.value;
         // 比较网站和用户名（严格匹配，可根据需求改为 toLowerCase() 不区分大小写）
-        // 不区分大小写的匹配（示例）
         return !isCurrentRecord &&
             p.website.toLowerCase() === website.toLowerCase() &&
             p.username.toLowerCase() === username.toLowerCase();
@@ -538,7 +663,7 @@ function savePassword() {
         website: website,
         username: username,
         password: password,
-        notes: notes,
+        notes: notes, // 使用处理后的时间戳
         createdAt: new Date().toISOString()
     };
 
@@ -559,6 +684,9 @@ function savePassword() {
     // 保存到localStorage
     savePasswords();
 
+    // 保存自动时间戳选项
+    localStorage.setItem('autoTimestamp', autoTimestamp);
+
     // 重置表单
     resetForm();
 }
@@ -567,6 +695,11 @@ function savePassword() {
 function searchPasswords() {
     const searchTerm = document.getElementById('searchInput').value;
     renderPasswordList(searchTerm);
+}
+
+function truncateText(text, maxLength) {
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
 }
 
 // 渲染密码列表
@@ -600,15 +733,15 @@ function renderPasswordList(searchTerm = '') {
     filteredPasswords.forEach(password => {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${escapeHtml(password.website)}</td>
-            <td>${escapeHtml(password.username)}</td>
-            <td class="password-cell">
+            <td class="website-cell" title="${escapeHtml(password.website)}">${escapeHtml(password.website)}</td>
+            <td class="username-cell" title="${escapeHtml(password.username)}">${escapeHtml(password.username)}</td>
+            <td class="password-column password-cell">
                 <span class="password-display hidden-password">${escapeHtml(password.password)}</span>
                 <button class="show-password-btn" onclick="togglePasswordVisibility(this)">
                     👁️
                 </button>
             </td>
-            <td>${escapeHtml(password.notes || '')}</td>
+            <td class="notes-cell" title="${escapeHtml(password.notes || '')}">${truncateText(escapeHtml(password.notes || ''), 50)}</td>
             <td class="action-buttons">
                 <button onclick="editPassword('${password.id}')" class="btn-warning">
                     ✏️ 编辑
@@ -635,8 +768,9 @@ function editPassword(id) {
         document.getElementById('username').value = password.username;
         document.getElementById('password').value = password.password;
         document.getElementById('notes').value = password.notes || '';
-        editId.value = password.id;
-
+        // 编辑时保持用户最后选择的状态
+        document.getElementById('autoTimestamp').checked = localStorage.getItem('autoTimestamp') === 'true';
+        
         saveBtn.innerHTML = '💾 更新密码';
         cancelBtn.style.display = 'flex';
         document.querySelector('.tab-btn').classList.add('active');
@@ -664,6 +798,8 @@ function cancelEdit() {
 // 重置表单
 function resetForm() {
     passwordForm.reset();
+    // 添加默认时间戳选项状态
+    document.getElementById('autoTimestamp').checked = localStorage.getItem('autoTimestamp') === 'true';
     editId.value = '';
     saveBtn.innerHTML = '💾 添加密码';
     cancelBtn.style.display = 'none';
@@ -1003,6 +1139,46 @@ function toggleShortcutHelp() {
         modal.style.display = 'flex';
     } else {
         modal.style.display = 'none';
+    }
+    
+    // 更新快捷键帮助中的快捷键显示
+    updateShortcutHelp();
+}
+
+// 更新快捷键帮助显示内容
+function updateShortcutHelp() {
+    const queryKeyDisplay = customKeys.query === 'arrowleft' ? '←' : customKeys.query.toUpperCase();
+    const addKeyDisplay = customKeys.add.toUpperCase();
+    const exportKeyDisplay = customKeys.export.toUpperCase();
+    const backKeyDisplay = customKeys.back === 'arrowleft' ? '←' : customKeys.back.toUpperCase();
+    const exitInputKeyDisplay = customKeys.exitInput === 'escape' ? 'Esc' : customKeys.exitInput.toUpperCase();
+    
+    const shortcutList = document.querySelector('.shortcut-list');
+    if (shortcutList) {
+        // 这里我们只更新导航快捷键部分
+        const navShortcuts = document.querySelector('.shortcut-section:first-child .shortcut-list');
+        if (navShortcuts) {
+            navShortcuts.innerHTML = `
+                <li><kbd>${queryKeyDisplay}</kbd> - 跳转到查询密码页面</li>
+                <li><kbd>${addKeyDisplay}</kbd> - 跳转到添加密码页面</li>
+                <li><kbd>${exportKeyDisplay}</kbd> - 跳转到导出数据页面</li>
+                <li><kbd>${backKeyDisplay}</kbd> - 返回主页面</li>
+                <li><kbd>Enter</kbd> - 聚焦到当前页面的第一个输入框</li>
+            `;
+        }
+        
+        // 更新功能快捷键部分
+        const funcShortcuts = document.querySelectorAll('.shortcut-section')[1];
+        if (funcShortcuts) {
+            funcShortcuts.innerHTML = `
+                <h3>功能快捷键</h3>
+                <ul class="shortcut-list">
+                    <li><kbd>Tab</kbd> - 在输入框之间切换</li>
+                    <li><kbd>Enter</kbd> (在搜索框中) - 执行搜索</li>
+                    <li><kbd>${exitInputKeyDisplay}</kbd> - 退出输入框，启用其他快捷键</li>
+                </ul>
+            `;
+        }
     }
 }
 
