@@ -856,6 +856,7 @@ td {
     padding: 16px 20px;
     border-bottom: 1px solid var(--border-color);
     color: var(--text-primary);
+    /* height: 48px; */
 }
 
 tr:last-child td {
@@ -866,21 +867,45 @@ tr:hover {
     background: var(--glass-bg);
 }
 
+/* .website-cell, .username-cell {
+    max-width: 230px; 
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+} */
+
+/* .username-cell {
+    max-width: 200px; 
+} */
+
 .password-cell {
     position: relative;
     display: flex;
-    align-items: center;
+    align-items: center;    /* 垂直居中对齐 */
     gap: 10px;
+    width: auto;           /* 宽度自适应内容 */
+    white-space: nowrap;   /* 防止内容换行 */
+    height: 160px;            /* 占满单元格高度 */
+    padding: 8px 0;          /* 调整内边距与其他单元格匹配 */
 }
 
 .password-display {
     font-family: 'Courier New', monospace;
     font-size: 14px;
+    white-space: nowrap;
+}
+
+.notes-cell {
+    max-width: 80px; /* 可根据需要调整最大宽度 */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .hidden-password {
     filter: blur(4px);
 }
+
 
 .show-password-btn {
     background: var(--glass-bg);
@@ -903,10 +928,8 @@ tr:hover {
     border-color: var(--primary-color);
 }
 
-.action-buttons {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
+.action-buttons button {
+    margin: 4px; /* 为每个按钮添加4px的四边外边距 */
 }
 
 .action-buttons button {
@@ -1025,6 +1048,14 @@ tr:hover {
     margin-bottom: 25px;
 }
 
+/* 新增密码和备注并排显示的容器 */
+.password-notes-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 25px;
+    margin-bottom: 25px;
+}
+
 .form-group {
     margin-bottom: 20px;
 }
@@ -1037,6 +1068,58 @@ tr:hover {
     font-weight: 600;
     color: var(--text-primary);
     font-size: 14px;
+}
+
+.form-group .checkbox-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 1px;
+    margin-top: 3px;
+}
+
+/* 新增备注头部样式 */
+.notes-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+    margin-top: 0;
+}
+
+/* 添加防换行样式 */
+.checkbox-label {
+    white-space: nowrap;
+}
+
+input[type="checkbox"] {
+    margin-bottom: 8px; /* 保留原有间距 */
+    appearance: none;
+    -webkit-appearance: none;
+    box-sizing: border-box; /*内容盒模型（宽高仅含内容区）*/
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.3s ease;
+    transform: scale(0.5);
+}
+
+/* 选中状态样式 */
+input[type="checkbox"]:checked {
+    border-color: var(--primary-color); /* 使用主题主色 */
+    background-color: var(--primary-color);
+}
+
+/* 添加选中图标（对勾） */
+input[type="checkbox"]:checked::after {
+    content: "\2713";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
 }
 
 .form-group input,
@@ -1090,6 +1173,58 @@ tr:hover {
     padding-top: 30px;
     border-top: 1px solid var(--border-color);
     flex-wrap: wrap;
+}
+
+/* 快捷键设置样式 */
+.settings-section {
+    margin-top: 30px;
+    padding-top: 30px;
+    border-top: 1px solid var(--border-color);
+}
+
+.settings-section h3 {
+    margin-bottom: 20px;
+    color: var(--text-primary);
+}
+
+/* 修改主密码部分样式 */
+#changeMasterPasswordForm h3 {
+    margin-bottom: 20px;
+    color: var(--text-primary);
+}
+
+#changeMasterPasswordForm + .settings-section {
+    margin-top: 40px;
+}
+
+/* 表单组间距 */
+.input-group {
+    margin-bottom: 25px;
+}
+
+.key-input {
+    width: 100%;
+    padding: 15px;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    font-size: 16px;
+    background: var(--card-background);
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+    text-align: center;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.key-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+}
+
+.key-input.recording {
+    background-color: var(--primary-color);
+    color: white;
 }
 
 .primary-btn {
