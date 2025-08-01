@@ -19,7 +19,7 @@ const DEFAULT_KEYS = {
 };
 
 // 当前快捷键设置
-let customKeys = {...DEFAULT_KEYS};
+let customKeys = { ...DEFAULT_KEYS };
 
 // DOM 元素
 let loginPage, mainPage, queryPage, addPage, exportPage;
@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // 添加搜索框回车事件监听
-    searchInput.addEventListener('keypress', function(e) {
+    searchInput.addEventListener('keypress', function (e) {
         if (e.key === 'Enter') {
             e.preventDefault();
             searchPasswords();
@@ -99,10 +99,10 @@ function initCustomKeys() {
             customKeys = JSON.parse(savedKeys);
         } catch (e) {
             console.error('Failed to parse custom keys, using defaults');
-            customKeys = {...DEFAULT_KEYS};
+            customKeys = { ...DEFAULT_KEYS };
         }
     }
-    
+
     // 在设置页面显示当前快捷键
     if (document.getElementById('queryKey')) {
         document.getElementById('queryKey').value = customKeys.query === 'arrowleft' ? '←' : customKeys.query;
@@ -117,7 +117,7 @@ function initCustomKeys() {
 function setupKeyInputListeners() {
     const keyInputs = document.querySelectorAll('.key-input');
     keyInputs.forEach(input => {
-        input.addEventListener('keydown', function(e) {
+        input.addEventListener('keydown', function (e) {
             e.preventDefault();
             // 处理特殊键
             if (e.key === 'ArrowLeft') {
@@ -134,13 +134,13 @@ function setupKeyInputListeners() {
                 this.dataset.keyValue = e.key.toLowerCase();
             }
         });
-        
-        input.addEventListener('focus', function() {
+
+        input.addEventListener('focus', function () {
             this.classList.add('recording');
             this.placeholder = '按任意键设置';
         });
-        
-        input.addEventListener('blur', function() {
+
+        input.addEventListener('blur', function () {
             this.classList.remove('recording');
             if (!this.value) {
                 this.placeholder = '按任意键设置';
@@ -156,22 +156,22 @@ function saveCustomKeys() {
     const exportKey = document.getElementById('exportKey').dataset.keyValue || document.getElementById('exportKey').value.toLowerCase();
     const backKey = document.getElementById('backKey').dataset.keyValue || document.getElementById('backKey').value.toLowerCase();
     const exitInputKey = document.getElementById('exitInputKey').dataset.keyValue || document.getElementById('exitInputKey').value.toLowerCase();
-    
+
     // 简单验证
     if (!queryKey || !addKey || !exportKey || !backKey || !exitInputKey) {
         showNotification('所有快捷键都必须设置！', 'error');
         return;
     }
-    
+
     // 检查重复 (除了特殊键)
     const navKeys = [queryKey, addKey, exportKey].filter(key => !['arrowleft', 'escape'].includes(key));
     const hasDuplicates = new Set(navKeys).size !== navKeys.length;
-    
+
     if (hasDuplicates) {
         showNotification('导航快捷键不能重复！', 'error');
         return;
     }
-    
+
     customKeys = {
         query: queryKey,
         add: addKey,
@@ -179,17 +179,21 @@ function saveCustomKeys() {
         back: backKey,
         exitInput: exitInputKey
     };
-    
+
     localStorage.setItem(CUSTOM_KEYS_KEY, JSON.stringify(customKeys));
     showNotification('快捷键设置已保存！');
+
 }
 
 // 恢复默认快捷键
 function resetDefaultKeys() {
-    customKeys = {...DEFAULT_KEYS};
+    customKeys = { ...DEFAULT_KEYS };
     document.getElementById('queryKey').value = customKeys.query;
     document.getElementById('addKey').value = customKeys.add;
     document.getElementById('exportKey').value = customKeys.export;
+    document.getElementById('backKey').value = customKeys.back;
+    document.getElementById('exitInputKey').value = customKeys.exitInput;
+    localStorage.setItem(CUSTOM_KEYS_KEY, JSON.stringify(customKeys));
     showNotification('已恢复默认快捷键');
 }
 
@@ -259,19 +263,19 @@ function checkAuthStatus() {
 }
 
 // 添加键盘事件监听器
-document.addEventListener('keydown', function(e) {
+document.addEventListener('keydown', function (e) {
     // 只在主页面启用快捷键
     if (!isAuthenticated || !document.getElementById('mainPage').classList.contains('active')) {
         return;
     }
-    
+
     // 阻止在输入框中触发快捷键
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
         return;
     }
-    
+
     // 使用自定义快捷键或默认快捷键
-    switch(e.key.toLowerCase()) {
+    switch (e.key.toLowerCase()) {
         case customKeys.query:
             e.preventDefault();
             showView('query');
@@ -288,14 +292,14 @@ document.addEventListener('keydown', function(e) {
 });
 
 // 添加一个新的键盘事件监听器，专门用于处理返回键
-document.addEventListener('keydown', function(e) {
+document.addEventListener('keydown', function (e) {
     // 阻止在输入框中触发快捷键
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
         return;
     }
-    
+
     // 检查是否按下了返回键
-    if (e.key === 'ArrowLeft' && customKeys.back === 'arrowleft' || 
+    if (e.key === 'ArrowLeft' && customKeys.back === 'arrowleft' ||
         e.key.toLowerCase() === customKeys.back && customKeys.back !== 'arrowleft') {
         // 根据当前活动页面执行相应的返回操作
         if (document.getElementById('queryPage').classList.contains('active')) {
@@ -315,12 +319,12 @@ document.addEventListener('keydown', function(e) {
 });
 
 // 添加处理回车键进入输入框的事件监听器
-document.addEventListener('keydown', function(e) {
+document.addEventListener('keydown', function (e) {
     // 如果按下的不是回车键，直接返回
     if (e.key !== 'Enter') {
         return;
     }
-    
+
     // 定义需要处理的页面及其第一个输入框的ID
     const pageInputMap = {
         'loginPage': 'masterPassword',
@@ -329,7 +333,7 @@ document.addEventListener('keydown', function(e) {
         'exportPage': 'exportSearch',
         'settingsPage': 'oldMasterPassword'
     };
-    
+
     // 查找当前激活的页面
     let activePage = null;
     for (let pageId in pageInputMap) {
@@ -339,7 +343,7 @@ document.addEventListener('keydown', function(e) {
             break;
         }
     }
-    
+
     // 如果找到激活的页面且不在输入框中，则聚焦到该页面的第一个输入框
     if (activePage && (!e.target.tagName || (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA'))) {
         e.preventDefault();
@@ -352,11 +356,11 @@ document.addEventListener('keydown', function(e) {
 });
 
 // 添加Esc键退出输入框的事件监听器
-document.addEventListener('keydown', function(e) {
+document.addEventListener('keydown', function (e) {
     // 仅在输入框或文本区域聚焦时处理退出输入框键
-    if ((e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') && 
-        (e.key === 'Escape' && customKeys.exitInput === 'escape' || 
-         e.key.toLowerCase() === customKeys.exitInput && customKeys.exitInput !== 'escape')) {
+    if ((e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') &&
+        (e.key === 'Escape' && customKeys.exitInput === 'escape' ||
+            e.key.toLowerCase() === customKeys.exitInput && customKeys.exitInput !== 'escape')) {
         e.preventDefault();
         e.target.blur(); // 移除焦点
         // showNotification('已退出输入框');
@@ -382,7 +386,7 @@ function showPage(pageId) {
     if (pageId === 'queryPage' && isAuthenticated) {
         renderPasswordList();
     }
-    
+
     // 特殊处理：当显示设置页面时更新快捷键显示
     if (pageId === 'settingsPage') {
         document.getElementById('queryKey').value = customKeys.query === 'arrowleft' ? '←' : customKeys.query;
@@ -633,7 +637,7 @@ function savePassword() {
     // 如果启用自动时间戳则追加时间戳
     if (autoTimestamp) {
         const now = new Date();
-        const formattedDate = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+        const formattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
         notes += ` ${formattedDate}`;
     }
 
@@ -770,7 +774,7 @@ function editPassword(id) {
         document.getElementById('notes').value = password.notes || '';
         // 编辑时保持用户最后选择的状态
         document.getElementById('autoTimestamp').checked = localStorage.getItem('autoTimestamp') === 'true';
-        
+
         saveBtn.innerHTML = '💾 更新密码';
         cancelBtn.style.display = 'flex';
         document.querySelector('.tab-btn').classList.add('active');
@@ -808,7 +812,7 @@ function resetForm() {
 // 修改显示密码函数，添加ARIA属性更新
 function togglePasswordVisibility(button) {
     const passwordSpan = button.previousElementSibling;
-    
+
     if (passwordSpan.classList.contains('hidden-password')) {
         passwordSpan.classList.remove('hidden-password');
         button.innerHTML = '🙈';
@@ -1140,7 +1144,7 @@ function toggleShortcutHelp() {
     } else {
         modal.style.display = 'none';
     }
-    
+
     // 更新快捷键帮助中的快捷键显示
     updateShortcutHelp();
 }
@@ -1152,7 +1156,7 @@ function updateShortcutHelp() {
     const exportKeyDisplay = customKeys.export.toUpperCase();
     const backKeyDisplay = customKeys.back === 'arrowleft' ? '←' : customKeys.back.toUpperCase();
     const exitInputKeyDisplay = customKeys.exitInput === 'escape' ? 'Esc' : customKeys.exitInput.toUpperCase();
-    
+
     const shortcutList = document.querySelector('.shortcut-list');
     if (shortcutList) {
         // 这里我们只更新导航快捷键部分
@@ -1166,7 +1170,7 @@ function updateShortcutHelp() {
                 <li><kbd>Enter</kbd> - 聚焦到当前页面的第一个输入框</li>
             `;
         }
-        
+
         // 更新功能快捷键部分
         const funcShortcuts = document.querySelectorAll('.shortcut-section')[1];
         if (funcShortcuts) {
