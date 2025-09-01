@@ -258,32 +258,32 @@
 
                 <!-- 单条添加 -->
                 <div class="tab-content" id="singleTab">
-                    <form id="passwordForm" class="add-form">
+                    <form id="addPasswordForm" class="add-form">
                         <input type="hidden" id="editId">
 
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="website">
+                                <label for="addWebsite">
                                     🌐 网站名称 *
                                 </label>
-                                <input type="text" id="website" placeholder="例如：github.com" required>
+                                <input type="text" id="addWebsite" placeholder="例如：github.com" required>
                             </div>
 
                             <div class="form-group">
-                                <label for="username">
+                                <label for="addUsername">
                                     👤 用户名 *
                                 </label>
-                                <input type="text" id="username" placeholder="您的用户名" required>
+                                <input type="text" id="addUsername" placeholder="您的用户名" required>
                             </div>
                         </div>
 
                         <div class="password-notes-row">
                             <div class="form-group password-group">
-                                <label for="password">
+                                <label for="addPassword">
                                     🔒 密码 *
                                 </label>
                                 <div class="password-input">
-                                    <input type="password" id="password" placeholder="输入密码" required>
+                                    <input type="password" id="addPassword" placeholder="输入密码" required>
                                     <button type="button" class="toggle-password"
                                         onclick="togglePasswordVisibilityInput('password')">
                                         👁️
@@ -295,20 +295,17 @@
                             </div>
                             <div class="form-group notes-group">
                                 <div class="notes-header">
-                                    <label for="notes">📝 备注</label>
+                                    <label for="addNotes">📝 备注</label>
                                     <div class="checkbox-wrapper">
-                                        <input type="checkbox" id="autoTimestamp">
-                                        <label for="autoTimestamp" class="checkbox-label">自动添加时间戳</label>
+                                        <input type="checkbox" id="addAutoTimestamp">
+                                        <label for="addAutoTimestamp" class="checkbox-label">自动添加时间戳</label>
                                     </div>
                                 </div>
-                                <textarea id="notes" rows="3" placeholder="添加备注信息"></textarea>
+                                <textarea id="addNotes" rows="3" placeholder="添加备注信息"></textarea>
                             </div>
                         </div>
 
                         <div class="form-actions">
-                            <button type="button" id="cancelBtn" class="secondary-btn" style="display: none;">
-                                ❌ 取消
-                            </button>
                             <button type="submit" id="saveBtn" class="primary-btn">
                                 💾 添加密码
                             </button>
@@ -436,6 +433,86 @@ website,username,password,notes
                             📤 导出匹配数据
                         </button>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 修改页面 -->
+    <div class="page" id="modifyPage">
+        <div class="content-container glass-card">
+            <div class="page-header">
+                <button class="back-btn" onclick="showMainPage()">
+                    ← 返回
+                </button>
+                <h2>🔧 修改密码</h2>
+            </div>
+
+            <div class="tab-container">
+                <div class="tab-header">
+                    <button class="tab-btn active" onclick="switchTab('single')">
+                        ✏️ 单条修改
+                    </button>
+                </div>
+
+                <!-- 单条修改 -->
+                <div class="tab-content" id="singleTab">
+                    <form id="modPasswordForm" class="add-form">
+                        <input type="hidden" id="editId">
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="modWebsite">
+                                    🌐 网站名称 *
+                                </label>
+                                <input type="text" id="modWebsite" placeholder="例如：github.com" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="modUsername">
+                                    👤 用户名 *
+                                </label>
+                                <input type="text" id="modUsername" placeholder="您的用户名" required>
+                            </div>
+                        </div>
+
+                        <div class="password-notes-row">
+                            <div class="form-group password-group">
+                                <label for="modPassword">
+                                    🔒 密码 *
+                                </label>
+                                <div class="password-input">
+                                    <input type="password" id="modPassword" placeholder="输入密码" required>
+                                    <button type="button" class="toggle-password"
+                                        onclick="togglePasswordVisibilityInput('modPassword')">
+                                        👁️
+                                    </button>
+                                    <button type="button" class="generate-password" onclick="generatePassword('mod')">
+                                        ✨
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="form-group notes-group">
+                                <div class="notes-header">
+                                    <label for="modNotes">📝 备注</label>
+                                    <div class="checkbox-wrapper">
+                                        <input type="checkbox" id="modAutoTimestamp">
+                                        <label for="modAutoTimestamp" class="checkbox-label">自动添加时间戳</label>
+                                    </div>
+                                </div>
+                                <textarea id="modNotes" rows="3" placeholder="添加备注信息"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" id="modCancelBtn" class="secondary-btn" style="display: block;">
+                                ❌ 取消
+                            </button>
+                            <button type="submit" id="modifyBtn" class="primary-btn">
+                                💾 更新密码
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
