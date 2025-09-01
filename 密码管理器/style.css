@@ -1609,10 +1609,14 @@ kbd {
     }
 
     .theme-selector {
-        top: 15px;
+        bottom: 15px;
         right: 15px;
+        top: auto; /* 重置top属性 */
+        flex-direction: column; /* 垂直排列以节省空间 */
+        gap: 8px;
+        padding: 8px;
     }
-
+    
     .theme-options {
         padding: 5px;
     }
