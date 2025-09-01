@@ -803,6 +803,7 @@ function deletePassword(id) {
 function cancelEdit() {
     resetForm();
     showView('query');
+    searchPasswords();
 }
 
 // 重置表单
@@ -1223,3 +1224,4 @@ function deleteAllPasswords() {
     // 显示通知
     showNotification('所有密码记录已删除！', 'error');
 }
+
