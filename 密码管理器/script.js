@@ -673,14 +673,15 @@ function savePassword(pageType = 'add') {
         showNotification('已存在相同网站和用户名的密码记录！', 'error');
         return;
     }
-
+    const now = new Date();
+    const formattedDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
     const passwordData = {
         id: editId.value || Date.now().toString(),
         website: website,
         username: username,
         password: password,
-        notes: notes, // 使用处理后的时间戳
-        createdAt: new Date().toISOString()
+        notes: notes, 
+        createdAt: formattedDate
     };
 
     if (editId.value) {
@@ -801,7 +802,7 @@ function deletePassword(id) {
 
 // 取消编辑
 function cancelEdit() {
-    resetForm();
+    resetForm('mod');
     showView('query');
     searchPasswords();
 }
@@ -1049,24 +1050,71 @@ function exportBySearch() {
     exportPasswords(filteredPasswords, `搜索"${searchTerm}"的结果`);
 }
 
-// 导出密码数据
+// 将JSON数据转换为CSV格式（只修改导出部分）
+function jsonToCSV(jsonData) {
+    if (jsonData.length === 0) return '';
+    
+    // 获取表头
+    const headers = Object.keys(jsonData[0]);
+    
+    // 创建CSV内容
+    let csvContent = headers.join(',') + '\n';
+    
+    // 添加数据行
+    jsonData.forEach(row => {
+        const values = headers.map(header => {
+            const value = row[header] || '';
+            // 确保正确处理字符串，保持原始编码
+            // 使用String()确保转换为字符串，但不trim()以保留原始空格
+            const strValue = String(value);
+            
+            // 检查是否需要引号包围（只对CSV特殊字符）
+            const needsQuotes = strValue.includes(',') || 
+                              strValue.includes('\n') || 
+                              strValue.includes('\r') || 
+                              strValue.includes('"');
+            
+            if (needsQuotes) {
+                // 转义引号并包围
+                return '"' + strValue.replace(/"/g, '""') + '"';
+            }
+            // 直接返回原始字符串，保留所有空格
+            return strValue;
+        });
+        csvContent += values.join(',') + '\n';
+    });
+    
+    return csvContent;
+}
+
+// 导出密码数据（只修改导出部分）
 function exportPasswords(data, fileNamePrefix) {
     if (data.length === 0) {
         showNotification('没有数据可导出！');
         return;
     }
 
-    const dataStr = JSON.stringify(data, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    // 将JSON数据转换为CSV格式
+    const csvContent = jsonToCSV(data);
+    
+    // 添加BOM标记确保Excel正确识别UTF-8编码
+    const BOM = '\ufeff';
+    const csvContentWithBOM = BOM + csvContent;
+    
+    // 创建Blob对象，明确指定UTF-8编码
+    const dataBlob = new Blob([csvContentWithBOM], { 
+        type: 'text/csv;charset=utf-8' 
+    });
+    
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${fileNamePrefix}_${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `${fileNamePrefix}_${new Date().toISOString().split('T')[0]}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    showNotification('数据导出成功！');
+    showNotification('CSV数据导出成功！');
 }
 
 // 刷新结果
@@ -1224,4 +1272,3 @@ function deleteAllPasswords() {
     // 显示通知
     showNotification('所有密码记录已删除！', 'error');
 }
-
