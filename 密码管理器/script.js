@@ -23,8 +23,8 @@ let customKeys = { ...DEFAULT_KEYS };
 
 // DOM 元素
 let loginPage, mainPage, queryPage, addPage, exportPage;
-let loginForm, errorMessage, passwordForm, passwordList, searchInput;
-let saveBtn, cancelBtn, editId;
+let loginForm, errorMessage, addPasswordForm, modPasswordForm, passwordList, searchInput;
+let saveBtn, modCancelBtn, editId;
 
 // 初始化
 document.addEventListener('DOMContentLoaded', function () {
@@ -37,11 +37,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
     loginForm = document.getElementById('loginForm');
     errorMessage = document.getElementById('errorMessage');
-    passwordForm = document.getElementById('passwordForm');
+    addPasswordForm = document.getElementById('addPasswordForm');
+    modPasswordForm = document.getElementById('modPasswordForm');
     passwordList = document.getElementById('passwordList');
     searchInput = document.getElementById('searchInput');
-    saveBtn = document.getElementById('saveBtn');
-    cancelBtn = document.getElementById('cancelBtn');
+    // saveBtn = document.getElementById('saveBtn');
+    modCancelBtn = document.getElementById('modCancelBtn');
     editId = document.getElementById('editId');
 
     // 初始化主题
@@ -71,9 +72,14 @@ document.addEventListener('DOMContentLoaded', function () {
         handleLogin();
     });
 
-    passwordForm.addEventListener('submit', function (e) {
+    addPasswordForm.addEventListener('submit', function (e) {
         e.preventDefault();
-        savePassword();
+        savePassword('add');
+    });
+
+    modPasswordForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        savePassword('mod');
     });
 
     // 添加搜索框回车事件监听
@@ -85,7 +91,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // 取消编辑事件
-    cancelBtn.addEventListener('click', cancelEdit);
+    modCancelBtn.addEventListener('click', cancelEdit);
 
     // 为快捷键输入框添加事件监听器
     setupKeyInputListeners();
@@ -516,6 +522,7 @@ function showMainPage() {
     if (isAuthenticated) {
         updateStats();
     }
+    document.getElementById('searchInput').value = ''
 }
 
 // 更新统计信息
@@ -550,6 +557,9 @@ function showView(view) {
             break;
         case 'export':
             showPage('exportPage');
+            break;
+        case 'modify':
+            showPage('modifyPage');
             break;
     }
 }
@@ -627,12 +637,13 @@ function showError(message, elementId = 'errorMessage') {
 }
 
 // 保存密码
-function savePassword() {
-    const website = document.getElementById('website').value;
-    const username = document.getElementById('username').value;
-    const password = document.getElementById('password').value;
-    let notes = document.getElementById('notes').value.trim();
-    const autoTimestamp = document.getElementById('autoTimestamp').checked;
+function savePassword(pageType = 'add') {
+    const prefix = pageType === 'add' ? 'add' : 'mod';
+    const website = document.getElementById(prefix + 'Website').value;
+    const username = document.getElementById(prefix + 'Username').value;
+    const password = document.getElementById(prefix + 'Password').value;
+    let notes = document.getElementById(prefix + 'Notes').value.trim();
+    const autoTimestamp = document.getElementById(prefix + 'AutoTimestamp').checked;
 
     // 如果启用自动时间戳则追加时间戳
     if (autoTimestamp) {
@@ -647,11 +658,12 @@ function savePassword() {
         return;
     }
 
-    // 新增：检查重复记录（相同网站+用户名）
+    /// 新增：检查重复记录（相同网站+用户名）
+    const currentEditId = editId.value ? String(editId.value) : null;
     const isDuplicate = passwords.some(p => {
-        // 更新时排除当前编辑的记录（通过 editId.value 判断是否为更新操作）
-        const isCurrentRecord = editId.value && p.id === editId.value;
-        // 比较网站和用户名（严格匹配，可根据需求改为 toLowerCase() 不区分大小写）
+        // 更新时排除当前编辑的记录
+        const isCurrentRecord = currentEditId && String(p.id) === currentEditId;
+        // 比较网站和用户名
         return !isCurrentRecord &&
             p.website.toLowerCase() === website.toLowerCase() &&
             p.username.toLowerCase() === username.toLowerCase();
@@ -679,6 +691,7 @@ function savePassword() {
         }
         showNotification('密码更新成功！');
         showView('query');
+        searchPasswords();
     } else {
         // 添加新密码
         passwords.push(passwordData);
@@ -766,20 +779,13 @@ function renderPasswordList(searchTerm = '') {
 function editPassword(id) {
     const password = passwords.find(p => p.id === id);
     if (password) {
-        // 切换到添加页面并显示编辑表单
-        showView('add');
-        document.getElementById('website').value = password.website;
-        document.getElementById('username').value = password.username;
-        document.getElementById('password').value = password.password;
-        document.getElementById('notes').value = password.notes || '';
-        // 编辑时保持用户最后选择的状态
-        document.getElementById('autoTimestamp').checked = localStorage.getItem('autoTimestamp') === 'true';
-
-        saveBtn.innerHTML = '💾 更新密码';
-        cancelBtn.style.display = 'flex';
-        document.querySelector('.tab-btn').classList.add('active');
-        document.getElementById('singleTab').style.display = 'block';
-        document.getElementById('batchTab').style.display = 'none';
+        showView('modify');
+        document.getElementById('modWebsite').value = password.website;
+        document.getElementById('modUsername').value = password.username;
+        document.getElementById('modPassword').value = password.password;
+        document.getElementById('modNotes').value = password.notes || '';
+        document.getElementById('modAutoTimestamp').checked = localStorage.getItem('autoTimestamp') === 'true';
+        document.getElementById('editId').value = id;
     }
 }
 
@@ -800,13 +806,14 @@ function cancelEdit() {
 }
 
 // 重置表单
-function resetForm() {
-    passwordForm.reset();
-    // 添加默认时间戳选项状态
-    document.getElementById('autoTimestamp').checked = localStorage.getItem('autoTimestamp') === 'true';
-    editId.value = '';
-    saveBtn.innerHTML = '💾 添加密码';
-    cancelBtn.style.display = 'none';
+function resetForm(pageType = 'add') {
+    const prefix = pageType === 'add' ? 'add' : 'mod';
+    const form = document.getElementById(prefix + 'PasswordForm');
+    if (form) {
+        form.reset();
+    }
+    document.getElementById(prefix + 'AutoTimestamp').checked = localStorage.getItem('autoTimestamp') === 'true';
+    document.getElementById('editId').value = '';
 }
 
 // 修改显示密码函数，添加ARIA属性更新
@@ -841,15 +848,18 @@ function togglePasswordVisibilityInput(inputId) {
 }
 
 // 生成随机密码
-function generatePassword() {
+function generatePassword(pageType = 'add') {
     const length = 16;
     const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
     let password = "";
     for (let i = 0; i < length; i++) {
         password += charset.charAt(Math.floor(Math.random() * charset.length));
     }
-    document.getElementById('password').value = password;
-    showNotification('已生成随机密码');
+    const targetField = document.getElementById(pageType + 'Password');
+    if (targetField) {
+        targetField.value = password;
+        showNotification('已生成随机密码');
+    }
 }
 
 // 复制到剪贴板
