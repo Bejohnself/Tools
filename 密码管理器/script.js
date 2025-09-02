@@ -531,14 +531,39 @@ function updateStats() {
 
     document.getElementById('totalPasswords').textContent = passwords.length;
 
-    // 计算今日新增
-    const today = new Date().toDateString();
-    const todayAdded = passwords.filter(p => {
-        const createDate = new Date(p.createdAt);
-        return createDate.toDateString() === today;
-    }).length;
+    // 计算密码重复率
+    let duplicateCount = 0;
+    const n = passwords.length;
+    
+    if (n > 1) {
+        // 每个密码两两比较
+        for (let i = 0; i < n; i++) {
+            for (let j = i + 1; j < n; j++) {
+                if (passwords[i].password === passwords[j].password) {
+                    duplicateCount++;
+                }
+            }
+        }
+        
+        // 计算重复率：重复数除以n*(n-1)/2
+        const totalComparisons = n * (n - 1) / 2;
+        const duplicateRate = (duplicateCount / totalComparisons * 100).toFixed(2);
 
-    document.getElementById('todayAdded').textContent = todayAdded;
+        // 分段颜色
+        // const repetitiveRateColor = duplicateRate >= 70 ? '#ee4444ff':
+        //                           duplicateRate >= 50 ? '#f15c1cff':
+        //                           duplicateRate >= 15 ? '#f0bd15ff': '#47e784ff';
+        
+        // 创建渐变色效果（从绿色到红色）
+        const red = Math.min(255, Math.floor(duplicateRate * 2.55)); // 0-100% -> 0-255
+        const green = Math.max(0, 255 - Math.floor(duplicateRate * 2.55));
+        const repetitiveRateColor = `rgb(${red}, ${green}, 0)`;
+        document.getElementById('repetitiveRate').textContent = `${duplicateRate}%`;
+        document.getElementById('repetitiveRate').style.color = repetitiveRateColor;
+    } else {
+        // 如果密码数量少于2个，重复率为0
+        document.getElementById('repetitiveRate').textContent = '0.00%';
+    }
 }
 
 // 显示视图
