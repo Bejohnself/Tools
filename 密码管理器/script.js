@@ -563,7 +563,7 @@ function updateStats() {
     } else {
         // 如果密码数量少于2个，重复率为0
         document.getElementById('repetitiveRate').textContent = '0.00%';
-        document.getElementById('repetitiveRate').style.color = rgb(0, 255, 0);
+        document.getElementById('repetitiveRate').style.color = `rgb(0, 255, 0)`;
     }
 }
 
