@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Dropbox 获取 Refresh Token</title>
+</head>
+
+<body>
+    <h2>Dropbox Refresh Token 获取工具</h2>
+    <p>App Key: <input id="appKey"></p>
+    <p>App Secret: <input id="appSecret" type="password"></p>
+    <p>Redirect URI: <input id="redirectUri" value="https://bejohnself.github.io/Tools/大学生体测计算器/index.html"></p>
+    <button id="authBtn">开始授权</button>
+    <pre id="output"></pre>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get("code");
+
+        document.getElementById("authBtn").onclick = () => {
+            const appKey = document.getElementById("appKey").value;
+            const redirectUri = document.getElementById("redirectUri").value;
+            const authUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${encodeURIComponent(appKey)}&response_type=code&token_access_type=offline&redirect_uri=${encodeURIComponent(redirectUri)}`;
+            window.location.href = authUrl;
+        };
+
+        if (code) {
+            const appKey = document.getElementById("appKey").value || "在这里填App Key";
+            const appSecret = document.getElementById("appSecret").value || "在这里填App Secret";
+            const redirectUri = document.getElementById("redirectUri").value || "http://localhost:8080/callback";
+
+            fetch("https://api.dropboxapi.com/oauth2/token", {
+                method: "POST",
+                headers: {
+                    "Authorization": "Basic " + btoa(appKey + ":" + appSecret),
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: new URLSearchParams({
+                    code: code,
+                    grant_type: "authorization_code",
+                    redirect_uri: redirectUri
+                })
+            })
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById("output").textContent = JSON.stringify(data, null, 2);
+                })
+                .catch(err => {
+                    document.getElementById("output").textContent = "错误: " + err;
+                });
+        }
+    </script>
+</body>
+
+</html>
