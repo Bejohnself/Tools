@@ -153,9 +153,9 @@
 
         // 保存按钮
         document.getElementById("saveBtn").onclick = async () => {
-            const id = account.value.trim();
-            const pwd = pwd.value.trim();
-            const master = master.value.trim();
+            const id = document.getElementById("account").value.trim();
+            const pwdValue = document.getElementById("pwd").value.trim();
+            const masterValue = document.getElementById("master").value.trim();
             if (!id || !pwd || !master) return alert("请填写完整信息");
 
             const salt = generateSalt();
@@ -169,8 +169,8 @@
 
         // 读取按钮
         document.getElementById("loadBtn").onclick = async () => {
-            const id = account.value.trim();
-            const master = master.value.trim();
+            const id = document.getElementById("account").value.trim();
+            const masterValue = document.getElementById("master").value.trim();
             if (!id || !master) return alert("请填写完整信息");
 
             let localData = await loadLocal(id);
