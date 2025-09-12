@@ -4,23 +4,74 @@
 <head>
     <meta charset="UTF-8">
     <title>安全版 Dropbox 云同步密码管理器（离线支持）</title>
+    <meta name="referrer" content="no-referrer">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, PingFang SC, Microsoft YaHei, sans-serif;
+            max-width: 720px;
+            margin: 40px auto;
+            padding: 0 16px;
+        }
+
+        input {
+            padding: 6px 8px;
+            width: 100%;
+            max-width: 420px;
+        }
+
+        p {
+            margin: 10px 0;
+        }
+
+        button {
+            padding: 8px 14px;
+            margin-right: 8px;
+        }
+
+        pre {
+            background: #f7f7f7;
+            padding: 10px;
+            border-radius: 6px;
+            overflow: auto;
+        }
+
+        small {
+            color: #666;
+        }
+    </style>
 </head>
 
 <body>
     <h2>安全版密码管理器（Dropbox 云同步 + 离线缓存）</h2>
-    <p>账号ID: <input id="account" placeholder="如 myemail"></p>
-    <p>密码: <input id="pwd" placeholder="要保存的密码"></p>
-    <p>主密码: <input id="master" placeholder="用于加密/解密的主密码"></p>
+
+    <p>账号ID：<input id="account" placeholder="如 myemail"></p>
+    <p>密码：<input id="pwd" placeholder="要保存的密码"></p>
+    <p>主密码：<input id="master" placeholder="用于加密/解密的主密码"></p>
     <button id="saveBtn">保存</button>
     <button id="loadBtn">读取</button>
 
+    <p><small>提示：首次使用需要 Dropbox 授权，授权后会自动保存刷新令牌到本地。</small></p>
+    <details>
+        <summary>调试日志</summary>
+        <pre id="log"></pre>
+    </details>
+
     <script>
+        /* ===== 配置（请确保与 Dropbox 控制台一致） ===== */
         const APP_KEY = "hd4xukbxdczezo4";
         const APP_SECRET = "qsjq9r4ilkvm0ag";
         const REDIRECT_URI = "https://bejohnself.github.io/Tools/dropbox.html";
 
-        // IndexedDB 初始化
+        /* ===== 简单日志工具 ===== */
+        const logEl = document.getElementById("log");
+        function log(...args) {
+            const line = args.map(a => typeof a === "object" ? JSON.stringify(a) : String(a)).join(" ");
+            console.log("[LOG]", ...args);
+            logEl.textContent += line + "\n";
+        }
+
+        /* ===== IndexedDB 初始化 ===== */
         let db;
         const request = indexedDB.open("PasswordManagerDB", 1);
         request.onupgradeneeded = e => {
@@ -28,101 +79,167 @@
             if (!db.objectStoreNames.contains("passwords")) {
                 db.createObjectStore("passwords", { keyPath: "id" });
             }
+            log("IndexedDB upgrade complete");
         };
-        request.onsuccess = e => { db = e.target.result; };
-        request.onerror = e => { console.error("IndexedDB 错误", e); };
+        request.onsuccess = e => { db = e.target.result; log("IndexedDB ready"); };
+        request.onerror = e => { console.error("IndexedDB 错误", e); log("IndexedDB error:", e.target.error?.message || e); };
 
-        // 工具函数
+        /* ===== 加密工具函数 ===== */
         function generateSalt(len = 16) {
-            return CryptoJS.lib.WordArray.random(len).toString();
+            // 生成 hex 字符串的随机盐，避免编码不一致
+            return CryptoJS.lib.WordArray.random(len).toString(CryptoJS.enc.Hex);
         }
-        function deriveKey(masterPassword, salt) {
-            return CryptoJS.PBKDF2(masterPassword, CryptoJS.enc.Hex.parse(salt), {
+
+        function deriveKey(masterPassword, saltHex) {
+            if (!saltHex) throw new Error("Salt 不能为空");
+            if (typeof saltHex !== "string" || !/^[0-9a-fA-F]+$/.test(saltHex)) {
+                throw new Error("Salt 格式错误");
+            }
+            const saltWA = CryptoJS.enc.Hex.parse(saltHex);
+            // PBKDF2 返回的是 WordArray，可直接用于 AES
+            const key = CryptoJS.PBKDF2(masterPassword, saltWA, {
                 keySize: 256 / 32,
                 iterations: 100000
             });
+            return key;
         }
+
         function encryptData(data, key) {
             return CryptoJS.AES.encrypt(JSON.stringify(data), key).toString();
         }
+
         function decryptData(cipher, key) {
             try {
                 const bytes = CryptoJS.AES.decrypt(cipher, key);
-                return JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
-            } catch { return null; }
+                const txt = bytes.toString(CryptoJS.enc.Utf8);
+                if (!txt) return null;
+                return JSON.parse(txt);
+            } catch {
+                return null;
+            }
         }
+
         function getQueryParam(name) {
             return new URLSearchParams(window.location.search).get(name);
         }
 
-        // IndexedDB 操作
+        /* ===== IndexedDB 读写 ===== */
+        function assertDBReady() {
+            if (!db) throw new Error("数据库还没准备好，请稍后重试");
+        }
+
         function saveLocal(id, salt, cipher) {
             return new Promise((resolve, reject) => {
-                const tx = db.transaction("passwords", "readwrite");
-                tx.objectStore("passwords").put({ id, salt, cipher, updatedAt: Date.now() });
-                tx.oncomplete = () => resolve();
-                tx.onerror = e => reject(e);
-            });
-        }
-        function loadLocal(id) {
-            return new Promise((resolve, reject) => {
-                const tx = db.transaction("passwords", "readonly");
-                const req = tx.objectStore("passwords").get(id);
-                req.onsuccess = () => resolve(req.result);
-                req.onerror = e => reject(e);
+                try {
+                    assertDBReady();
+                    const tx = db.transaction("passwords", "readwrite");
+                    tx.oncomplete = () => resolve();
+                    tx.onerror = e => reject(e.target.error || e);
+                    tx.objectStore("passwords").put({ id, salt, cipher, updatedAt: Date.now() });
+                } catch (err) {
+                    reject(err);
+                }
             });
         }
 
-        // Dropbox Token
+        function loadLocal(id) {
+            return new Promise((resolve, reject) => {
+                try {
+                    assertDBReady();
+                    const tx = db.transaction("passwords", "readonly");
+                    const req = tx.objectStore("passwords").get(id);
+                    req.onsuccess = () => resolve(req.result || null);
+                    req.onerror = e => reject(e.target.error || e);
+                } catch (err) {
+                    reject(err);
+                }
+            });
+        }
+
+        /* ===== Dropbox OAuth / Token ===== */
         async function getAccessToken() {
             const refreshToken = localStorage.getItem("dropbox_refresh_token");
-            if (!refreshToken) return null;
-            const res = await fetch("https://api.dropboxapi.com/oauth2/token", {
-                method: "POST",
-                headers: {
-                    "Authorization": "Basic " + btoa(APP_KEY + ":" + APP_SECRET),
-                    "Content-Type": "application/x-www-form-urlencoded"
-                },
-                body: new URLSearchParams({
-                    refresh_token: refreshToken,
-                    grant_type: "refresh_token"
-                })
-            });
-            const data = await res.json();
-            return data.access_token || null;
-        }
-        async function exchangeCodeForTokens(code) {
-            const res = await fetch("https://api.dropboxapi.com/oauth2/token", {
-                method: "POST",
-                headers: {
-                    "Authorization": "Basic " + btoa(APP_KEY + ":" + APP_SECRET),
-                    "Content-Type": "application/x-www-form-urlencoded"
-                },
-                body: new URLSearchParams({
-                    code: code,
-                    grant_type: "authorization_code",
-                    redirect_uri: REDIRECT_URI
-                })
-            });
-            const data = await res.json();
-            if (data.refresh_token) {
-                localStorage.setItem("dropbox_refresh_token", data.refresh_token);
-                alert("授权成功！");
-                window.history.replaceState({}, document.title, REDIRECT_URI);
-            } else {
-                alert("授权失败：" + JSON.stringify(data));
+            if (!refreshToken) {
+                log("no refresh_token, start auth");
+                return null;
+            }
+            try {
+                const res = await fetch("https://api.dropboxapi.com/oauth2/token", {
+                    method: "POST",
+                    headers: {
+                        "Authorization": "Basic " + btoa(APP_KEY + ":" + APP_SECRET),
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+                    body: new URLSearchParams({
+                        refresh_token: refreshToken,
+                        grant_type: "refresh_token"
+                    })
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    log("refresh access_token failed:", data);
+                    return null;
+                }
+                log("got new access_token");
+                return data.access_token || null;
+            } catch (e) {
+                log("token refresh network error:", e);
+                return null;
             }
         }
+
+        async function exchangeCodeForTokens(code) {
+            try {
+                const res = await fetch("https://api.dropboxapi.com/oauth2/token", {
+                    method: "POST",
+                    headers: {
+                        "Authorization": "Basic " + btoa(APP_KEY + ":" + APP_SECRET),
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    },
+                    body: new URLSearchParams({
+                        code: code,
+                        grant_type: "authorization_code",
+                        redirect_uri: REDIRECT_URI
+                    })
+                });
+                const data = await res.json();
+                log("exchange code result:", data);
+                if (data.refresh_token) {
+                    localStorage.setItem("dropbox_refresh_token", data.refresh_token);
+                    alert("授权成功，已保存刷新令牌");
+                    // 清掉 URL 上的 code 避免重复交换
+                    window.history.replaceState({}, document.title, REDIRECT_URI);
+                } else {
+                    alert("授权失败：" + JSON.stringify(data));
+                }
+            } catch (e) {
+                alert("授权网络错误：" + e);
+            }
+        }
+
         function startAuth() {
-            const authUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${APP_KEY}&response_type=code&token_access_type=offline&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
+            const authUrl =
+                `https://www.dropbox.com/oauth2/authorize` +
+                `?client_id=${encodeURIComponent(APP_KEY)}` +
+                `&response_type=code` +
+                `&token_access_type=offline` +
+                `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
+            log("redirect to auth:", authUrl);
             window.location.href = authUrl;
         }
 
-        // Dropbox 同步
+        /* ===== Dropbox 同步 ===== */
         async function saveToDropbox(id, salt, cipher) {
             const accessToken = await getAccessToken();
-            if (!accessToken) { startAuth(); return; }
-            const payload = { salt, cipher, updatedAt: Date.now() };
+            if (!accessToken) {
+                startAuth();
+                return;
+            }
+            const payload = {
+                salt: salt,
+                cipher: cipher,
+                updatedAt: Date.now()
+            };
             await fetch("https://content.dropboxapi.com/2/files/upload", {
                 method: "POST",
                 headers: {
@@ -137,66 +254,107 @@
                 body: JSON.stringify(payload)
             });
         }
+
         async function loadFromDropbox(id) {
             const accessToken = await getAccessToken();
             if (!accessToken) { startAuth(); return null; }
-            const res = await fetch("https://content.dropboxapi.com/2/files/download", {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${accessToken}`,
-                    "Dropbox-API-Arg": JSON.stringify({ path: `/passwords/${id}.json` })
+
+            try {
+                const res = await fetch("https://content.dropboxapi.com/2/files/download", {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${accessToken}`,
+                        "Dropbox-API-Arg": JSON.stringify({ path: `/passwords/${id}.json` })
+                    }
+                });
+                const txt = await res.text();
+                if (!res.ok) {
+                    log("download failed:", txt);
+                    return null;
                 }
-            });
-            if (res.ok) return JSON.parse(await res.text());
-            return null;
+                log("download success");
+                return JSON.parse(txt);
+            } catch (e) {
+                log("download network error:", e);
+                return null;
+            }
         }
 
-        // 保存按钮
+        /* ===== 事件绑定 ===== */
         document.getElementById("saveBtn").onclick = async () => {
-            const id = document.getElementById("account").value.trim();
-            const pwdValue = document.getElementById("pwd").value.trim();
-            const masterValue = document.getElementById("master").value.trim();
-            if (!id || !pwd || !master) return alert("请填写完整信息");
+            try {
+                if (!db) return alert("数据库还没准备好，请稍等再试");
 
-            const salt = generateSalt();
-            const key = deriveKey(master, salt);
-            const cipher = encryptData({ value: pwd }, key);
+                const id = document.getElementById("account").value.trim();
+                const pwdValue = document.getElementById("pwd").value.trim();
+                const masterPassword = document.getElementById("master").value.trim();
+                if (!id || !pwdValue || !masterPassword) return alert("请填写完整信息");
 
-            await saveLocal(id, salt, cipher);
-            if (navigator.onLine) await saveToDropbox(id, salt, cipher);
-            alert("已保存（本地 + 云端）");
+                const salt = generateSalt();
+                const key = deriveKey(masterPassword, salt);
+                const cipher = encryptData({ value: pwdValue }, key);
+
+                log("save start:", { id, salt, cipherPreview: cipher.slice(0, 24) + "..." });
+
+                await saveLocal(id, salt, cipher);
+                log("local saved");
+
+                if (navigator.onLine) {
+                    const ok = await saveToDropbox(id, salt, cipher);
+                    if (ok) alert("已保存（本地 + 云端）");
+                    else alert("已保存到本地，但云端失败（详见日志）");
+                } else {
+                    alert("已保存到本地（当前离线）");
+                }
+            } catch (e) {
+                console.error(e);
+                alert("保存失败：" + e.message || e);
+            }
         };
 
-        // 读取按钮
         document.getElementById("loadBtn").onclick = async () => {
-            const id = document.getElementById("account").value.trim();
-            const masterValue = document.getElementById("master").value.trim();
-            if (!id || !master) return alert("请填写完整信息");
+            try {
+                if (!db) return alert("数据库还没准备好，请稍等再试");
 
-            let localData = await loadLocal(id);
-            let cloudData = navigator.onLine ? await loadFromDropbox(id) : null;
+                const id = document.getElementById("account").value.trim();
+                const masterPassword = document.getElementById("master").value.trim();
+                if (!id || !masterPassword) return alert("请填写完整信息");
 
-            // 取最新版本
-            let latest = localData;
-            if (cloudData && (!localData || cloudData.updatedAt > localData.updatedAt)) {
-                latest = cloudData;
-                await saveLocal(id, cloudData.salt, cloudData.cipher);
-            }
+                log("load start:", { id });
 
-            if (!latest) return alert("没有找到数据");
+                let localData = await loadLocal(id);
+                let cloudData = navigator.onLine ? await loadFromDropbox(id) : null;
 
-            const key = deriveKey(master, latest.salt);
-            const decrypted = decryptData(latest.cipher, key);
-            if (decrypted) {
-                alert("解密成功，密码是：" + decrypted.value);
-            } else {
-                alert("解密失败，主密码错误或数据损坏");
+                // 取最新版本
+                let latest = localData;
+                if (cloudData && (!localData || (cloudData.updatedAt || 0) > (localData.updatedAt || 0))) {
+                    latest = cloudData;
+                    await saveLocal(id, cloudData.salt, cloudData.cipher);
+                    log("local updated from cloud");
+                }
+
+                if (!latest) return alert("没有找到数据");
+
+                const key = deriveKey(masterPassword, latest.salt);
+                const decrypted = decryptData(latest.cipher, key);
+
+                if (decrypted && typeof decrypted.value === "string") {
+                    alert("解密成功，密码是：" + decrypted.value);
+                } else {
+                    alert("解密失败，主密码错误或数据损坏");
+                }
+            } catch (e) {
+                console.error(e);
+                alert("读取失败：" + e.message || e);
             }
         };
 
-        // 页面加载时检查授权码
+        /* ===== 首次授权回调处理 ===== */
         const code = getQueryParam("code");
-        if (code) exchangeCodeForTokens(code);
+        if (code) {
+            log("got code in URL:", code.slice(0, 6) + "...");
+            exchangeCodeForTokens(code);
+        }
     </script>
 </body>
 
