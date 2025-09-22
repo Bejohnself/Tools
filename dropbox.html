@@ -9,6 +9,8 @@
 
 <body>
     <h2>密码管理器（Dropbox 云同步）</h2>
+    <p>APP_KEY <input id="app_key" placeholder="APP_KEY"></p>
+    <p>APP_SECRET <input id="app_secret" placeholder="APP_SECRET"></p>
     <p>账号ID: <input id="account" placeholder="如 myemail"></p>
     <p>密码: <input id="pwd" placeholder="要保存的密码"></p>
     <p>主密码: <input id="master" placeholder="用于加密/解密的主密码"></p>
@@ -16,8 +18,6 @@
     <button id="loadBtn">从 Dropbox 读取</button>
 
     <script>
-        const APP_KEY = "hd4xukbxdczezo4";       // 必填
-        const APP_SECRET = "qsjq9r4ilkvm0ag"; // 必填
         const REDIRECT_URI = "https://bejohnself.github.io/Tools/dropbox.html"; // 必须和Dropbox后台一致
 
         // AES 加密/解密
@@ -151,6 +151,8 @@
 
         // 绑定按钮事件
         document.getElementById("saveBtn").onclick = () => {
+            const APP_KEY = document.getElementById("app_key").value;
+            const APP_SECRET = document.getElementById("app_secret").value;
             const id = document.getElementById("account").value;
             const pwd = document.getElementById("pwd").value;
             const master = document.getElementById("master").value;
