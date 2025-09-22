@@ -40,6 +40,8 @@
 
         // 用 refresh_token 获取新的 access_token
         async function getAccessToken() {
+            const APP_KEY = document.getElementById("app_key").value;
+            const APP_SECRET = document.getElementById("app_secret").value;
             const refreshToken = localStorage.getItem("dropbox_refresh_token");
             if (!refreshToken) return null;
 
@@ -60,6 +62,8 @@
 
         // 第一次授权获取 refresh_token
         async function exchangeCodeForTokens(code) {
+            const APP_KEY = document.getElementById("app_key").value;
+            const APP_SECRET = document.getElementById("app_secret").value;
             const res = await fetch("https://api.dropboxapi.com/oauth2/token", {
                 method: "POST",
                 headers: {
@@ -84,6 +88,8 @@
 
         // 跳转到 Dropbox 授权页
         function startAuth() {
+            const APP_KEY = document.getElementById("app_key").value;
+            const APP_SECRET = document.getElementById("app_secret").value;
             const authUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${APP_KEY}&response_type=code&token_access_type=offline&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
             window.location.href = authUrl;
         }
@@ -151,8 +157,6 @@
 
         // 绑定按钮事件
         document.getElementById("saveBtn").onclick = () => {
-            const APP_KEY = document.getElementById("app_key").value;
-            const APP_SECRET = document.getElementById("app_secret").value;
             const id = document.getElementById("account").value;
             const pwd = document.getElementById("pwd").value;
             const master = document.getElementById("master").value;
