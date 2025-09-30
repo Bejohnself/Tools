@@ -131,7 +131,7 @@ function updateStats() {
     // 计算密码重复率
     let duplicateCount = 0;
     const n = passwords.length;
-    
+
     if (n > 1) {
         // 每个密码两两比较
         for (let i = 0; i < n; i++) {
@@ -141,7 +141,7 @@ function updateStats() {
                 }
             }
         }
-        
+
         // 计算重复率：重复数除以n*(n-1)/2
         const totalComparisons = n * (n - 1) / 2;
         const duplicateRate = (duplicateCount / totalComparisons * 100).toFixed(2);
@@ -150,7 +150,7 @@ function updateStats() {
         // const repetitiveRateColor = duplicateRate >= 70 ? '#ee4444ff':
         //                           duplicateRate >= 50 ? '#f15c1cff':
         //                           duplicateRate >= 15 ? '#f0bd15ff': '#47e784ff';
-        
+
         // 创建渐变色效果（从绿色到红色）
         const red = Math.min(255, Math.floor(duplicateRate * 2.55)); // 0-100% -> 0-255
         const green = Math.max(0, 255 - Math.floor(duplicateRate * 2.55));
@@ -221,7 +221,8 @@ function showSetMasterPassword() {
         </form>
     `;
 
-    document.getElementById('setPasswordForm').addEventListener('submit', function (e) {
+    // 替换 showSetMasterPassword 函数中的表单提交事件处理程序
+    document.getElementById('setPasswordForm').addEventListener('submit', async function (e) {
         e.preventDefault();
         const newPassword = document.getElementById('newMasterPassword').value;
         const confirmPassword = document.getElementById('confirmMasterPassword').value;
@@ -236,13 +237,23 @@ function showSetMasterPassword() {
             return;
         }
 
-        localStorage.setItem(MASTER_PASSWORD_KEY, simpleHash(newPassword));
+        // 生成盐值并哈希密码
+        const salt = generateSalt();
+        const hashedPassword = await secureHash(newPassword, salt);
+
+        // 存储盐值和哈希值
+        const authData = {
+            salt: salt,
+            hash: hashedPassword
+        };
+
+        localStorage.setItem(MASTER_PASSWORD_KEY, JSON.stringify(authData));
         isAuthenticated = true;
         loadPasswords();
         showPage('mainPage');
         updateStats();
         showNotification('主密码设置成功！');
-        // 修复：确保首次设置密码后也显示密码列表
+        // 确保首次设置密码后也显示密码列表
         renderPasswordList();
     });
 }

@@ -158,7 +158,8 @@ function deletePassword(id) {
 }
 
 // 处理主密码修改
-function handleChangeMasterPassword() {
+// 修复 handleChangeMasterPassword 函数
+async function handleChangeMasterPassword() {
     const oldPassword = document.getElementById('oldMasterPassword').value;
     const newPassword = document.getElementById('newMasterPassword').value;
     const confirmPassword = document.getElementById('confirmMasterPassword').value;
@@ -168,8 +169,17 @@ function handleChangeMasterPassword() {
     errorElement.style.display = 'none';
 
     // 验证旧密码是否正确
-    const storedHash = localStorage.getItem(MASTER_PASSWORD_KEY);
-    if (!storedHash || simpleHash(oldPassword) !== storedHash) {
+    const storedData = localStorage.getItem(MASTER_PASSWORD_KEY);
+    if (!storedData) {
+        errorElement.textContent = '⚠️ 尚未设置主密码！';
+        errorElement.style.display = 'block';
+        return;
+    }
+
+    const authData = JSON.parse(storedData);
+    const hashedOldInput = await secureHash(oldPassword, authData.salt);
+
+    if (hashedOldInput !== authData.hash) {
         errorElement.textContent = '⚠️ 旧主密码错误！';
         errorElement.style.display = 'block';
         return;
@@ -190,7 +200,15 @@ function handleChangeMasterPassword() {
     }
 
     // 更新主密码哈希值
-    localStorage.setItem(MASTER_PASSWORD_KEY, simpleHash(newPassword));
+    const newSalt = generateSalt();
+    const newHashedPassword = await secureHash(newPassword, newSalt);
+    
+    const newAuthData = {
+        salt: newSalt,
+        hash: newHashedPassword
+    };
+    
+    localStorage.setItem(MASTER_PASSWORD_KEY, JSON.stringify(newAuthData));
     showNotification('主密码修改成功！请重新登录');
     logout(); // 修改成功后退出登录，要求用户用新密码重新登录
 }
