@@ -581,7 +581,7 @@ website,username,password,notes
                 </div>
 
                 <div class="form-actions">
-                    <button type="submit" class="primary-btn">💾 修改主密码</button>
+                    <button type="button" class="primary-btn" onclick="handleChangeMasterPassword()">💾 修改主密码</button>
                 </div>
                 <div class="error-message" id="changePasswordError"
                     style="display: none; color: #e63946; margin-top: 15px;"></div>
@@ -659,92 +659,6 @@ website,username,password,notes
         </div>
     </div>
 
-    <!-- 新增：云同步页面 -->
-    <div class="page" id="syncPage">
-        <div class="content-container glass-card">
-            <div class="page-header">
-                <button class="back-btn" onclick="showMainPage()">← 返回</button>
-                <h2>云同步-使用说明</h2>
-            </div>
-
-            <form id="changeMasterPasswordForm" class="settings-form">
-                <h3>🔐 修改主密码</h3>
-                <p style="margin-top: 0; margin-bottom: 20px; color: var(--text-secondary);">通过修改主密码来增强账户安全性</p>
-
-                <!-- 旧主密码输入 -->
-                <div class="input-group">
-                    <label for="oldMasterPassword" aria-label="旧主密码">🔑 旧主密码 *</label>
-                    <div class="password-input">
-                        <input type="password" id="oldMasterPassword" placeholder="请输入当前主密码" required>
-                        <button type="button" class="toggle-password"
-                            onclick="togglePasswordVisibilityInput('oldMasterPassword')" aria-label="切换密码可见性">
-                            👁️
-                        </button>
-                    </div>
-                </div>
-
-                <!-- 新主密码输入 -->
-                <div class="input-group">
-                    <label for="newMasterPassword" aria-label="新主密码">🔑 新主密码 *</label>
-                    <div class="password-input">
-                        <input type="password" id="newMasterPassword" placeholder="请输入新主密码（至少6位）" required>
-                        <button type="button" class="toggle-password"
-                            onclick="togglePasswordVisibilityInput('newMasterPassword')" aria-label="切换密码可见性">
-                            👁️
-                        </button>
-                    </div>
-                </div>
-
-                <!-- 确认新主密码输入 -->
-                <div class="input-group">
-                    <label for="confirmMasterPassword" aria-label="确认新主密码">🔑 确认新主密码 *</label>
-                    <div class="password-input">
-                        <input type="password" id="confirmMasterPassword" placeholder="请再次输入新主密码" required>
-                        <button type="button" class="toggle-password"
-                            onclick="togglePasswordVisibilityInput('confirmMasterPassword')" aria-label="切换密码可见性">
-                            👁️
-                        </button>
-                    </div>
-                </div>
-
-                <div class="form-actions">
-                    <button type="submit" class="primary-btn">💾 修改主密码</button>
-                </div>
-                <div class="error-message" id="changePasswordError"
-                    style="display: none; color: #e63946; margin-top: 15px;"></div>
-            </form>
-
-            <!-- 自定义快捷键设置 -->
-            <div class="settings-section">
-                <h3>⌨️ 自定义快捷键</h3>
-                <p style="margin-top: 0; margin-bottom: 20px; color: var(--text-secondary);">自定义键盘快捷键以提高操作效率</p>
-                <div class="form-group">
-                    <label for="queryKey">查询页面快捷键</label>
-                    <input type="text" id="queryKey" class="key-input" maxlength="1" placeholder="按任意键设置">
-                </div>
-                <div class="form-group">
-                    <label for="addKey">添加页面快捷键</label>
-                    <input type="text" id="addKey" class="key-input" maxlength="1" placeholder="按任意键设置">
-                </div>
-                <div class="form-group">
-                    <label for="exportKey">导出页面快捷键</label>
-                    <input type="text" id="exportKey" class="key-input" maxlength="1" placeholder="按任意键设置">
-                </div>
-                <div class="form-group">
-                    <label for="backKey">返回主页面快捷键</label>
-                    <input type="text" id="backKey" class="key-input" maxlength="1" placeholder="按任意键设置">
-                </div>
-                <div class="form-group">
-                    <label for="exitInputKey">退出输入框快捷键</label>
-                    <input type="text" id="exitInputKey" class="key-input" maxlength="1" placeholder="按任意键设置">
-                </div>
-                <div class="form-actions">
-                    <button type="button" class="secondary-btn" onclick="resetDefaultKeys()">↩ 恢复默认</button>
-                    <button type="button" class="primary-btn" onclick="saveCustomKeys()">💾 保存快捷键</button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- 通知提示 -->
     <div id="notification" class="notification"></div>

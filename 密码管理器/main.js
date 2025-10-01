@@ -179,15 +179,4 @@ function initEventListeners() {
         }
     });
 
-    // 初始化时绑定修改密码表单提交事件
-    document.addEventListener('DOMContentLoaded', function () {
-        const changePasswordForm = document.getElementById('changeMasterPasswordForm');
-        if (changePasswordForm) {
-            changePasswordForm.addEventListener('submit', function (e) {
-                e.preventDefault();
-                handleChangeMasterPassword();
-            });
-        }
-    });
 }
-

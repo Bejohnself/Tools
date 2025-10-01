@@ -42,7 +42,7 @@ function savePassword(pageType = 'add') {
         website: website,
         username: username,
         password: password,
-        notes: notes, 
+        notes: notes,
         createdAt: formattedDate
     };
 
@@ -202,12 +202,12 @@ async function handleChangeMasterPassword() {
     // 更新主密码哈希值
     const newSalt = generateSalt();
     const newHashedPassword = await secureHash(newPassword, newSalt);
-    
+
     const newAuthData = {
         salt: newSalt,
         hash: newHashedPassword
     };
-    
+
     localStorage.setItem(MASTER_PASSWORD_KEY, JSON.stringify(newAuthData));
     showNotification('主密码修改成功！请重新登录');
     logout(); // 修改成功后退出登录，要求用户用新密码重新登录
