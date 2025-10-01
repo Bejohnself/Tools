@@ -1,33 +1,79 @@
 // 加载密码数据
-function loadPasswords() {
-    const encryptedData = localStorage.getItem(PASSWORDS_KEY);
-    if (encryptedData) {
-        try {
-            // 将Base64转换为Uint8Array
-            const byteArray = Uint8Array.from(atob(encryptedData), c => c.charCodeAt(0));
-            // 使用TextDecoder解码UTF-8
-            const decoder = new TextDecoder();
-            const jsonStr = decoder.decode(byteArray);
-            passwords = JSON.parse(jsonStr);
-        } catch (e) {
-            console.error('加载密码失败:', e);
-            passwords = [];
-        }
-    } else {
+async function loadPasswords() {
+    const storedEncryptedPasswords = localStorage.getItem(PASSWORDS_KEY);
+    if (!storedEncryptedPasswords) {
         passwords = [];
+        return;
+    }
+    
+    const masterPassword = document.getElementById('masterPassword').value;
+    if (!masterPassword) return;
+    
+    // 获取主密码的盐值
+    const storedData = localStorage.getItem(MASTER_PASSWORD_KEY);
+    if (!storedData) return;
+    
+    const authData = JSON.parse(storedData);
+    const salt = authData.salt;
+    
+    // 派生解密密钥
+    const encryptionKey = await deriveEncryptionKey(masterPassword, salt);
+    
+    try {
+        const encryptedPasswords = JSON.parse(storedEncryptedPasswords);
+        passwords = [];
+        
+        // 解密所有密码
+        for (const encryptedPassword of encryptedPasswords) {
+            const decryptedPassword = await decryptPassword(encryptedPassword.password, encryptionKey);
+            passwords.push({
+                ...encryptedPassword,
+                password: decryptedPassword
+            });
+        }
+    } catch (error) {
+        console.error('解密密码时出错:', error);
+        passwords = [];
+        showError('密码解密失败，请重新登录');
+        logout();
     }
 }
 
-// 保存密码数据（修改部分）
-function savePasswords() {
-    const jsonStr = JSON.stringify(passwords);
-    // 使用TextEncoder处理UTF-8编码
-    const encoder = new TextEncoder();
-    const data = encoder.encode(jsonStr);
-    // 将Uint8Array转换为Base64
-    const encryptedData = btoa(String.fromCharCode(...data));
-    localStorage.setItem(PASSWORDS_KEY, encryptedData);
-    updateStats();
+// 保存密码数据
+async function savePasswords() {
+    if (!isAuthenticated) return;
+    
+    const masterPassword = document.getElementById('masterPassword').value;
+    if (!masterPassword) return;
+    
+    // 获取主密码的盐值
+    const storedData = localStorage.getItem(MASTER_PASSWORD_KEY);
+    if (!storedData) return;
+    
+    const authData = JSON.parse(storedData);
+    const salt = authData.salt;
+    
+    try {
+        // 派生加密密钥
+        const encryptionKey = await deriveEncryptionKey(masterPassword, salt);
+        
+        // 加密所有密码
+        const encryptedPasswords = [];
+        for (const password of passwords) {
+            const encryptedPassword = await encryptPassword(password.password, encryptionKey);
+            encryptedPasswords.push({
+                ...password,
+                password: encryptedPassword
+            });
+        }
+        
+        // 存储加密后的密码数据
+        localStorage.setItem(PASSWORDS_KEY, JSON.stringify(encryptedPasswords));
+        updateStats();
+    } catch (error) {
+        console.error('加密密码时出错:', error);
+        showError('密码保存失败');
+    }
 }
 
 // 保存自定义快捷键

@@ -1,5 +1,5 @@
 // 保存密码
-function savePassword(pageType = 'add') {
+async function savePassword(pageType = 'add') {
     const prefix = pageType === 'add' ? 'add' : 'mod';
     const website = document.getElementById(prefix + 'Website').value;
     const username = document.getElementById(prefix + 'Username').value;
@@ -20,7 +20,7 @@ function savePassword(pageType = 'add') {
         return;
     }
 
-    /// 新增：检查重复记录（相同网站+用户名）
+    // 新增：检查重复记录（相同网站+用户名）
     const currentEditId = editId.value ? String(editId.value) : null;
     const isDuplicate = passwords.some(p => {
         // 更新时排除当前编辑的记录
@@ -62,7 +62,7 @@ function savePassword(pageType = 'add') {
     }
 
     // 保存到localStorage
-    savePasswords();
+    await savePasswords();
 
     // 保存自动时间戳选项
     localStorage.setItem('autoTimestamp', autoTimestamp);
