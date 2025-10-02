@@ -62,8 +62,8 @@
 
         // 第一次授权获取 refresh_token
         async function exchangeCodeForTokens(code) {
-            const APP_KEY = document.getElementById("app_key").value;
-            const APP_SECRET = document.getElementById("app_secret").value;
+            const APP_KEY = localStorage.getItem("app_key");
+            const APP_SECRET = localStorage.getItem("app_secret");
             const res = await fetch("https://api.dropboxapi.com/oauth2/token", {
                 method: "POST",
                 headers: {
@@ -90,6 +90,9 @@
         function startAuth() {
             const APP_KEY = document.getElementById("app_key").value;
             const APP_SECRET = document.getElementById("app_secret").value;
+            // 保存到 localStorage
+            localStorage.setItem("app_key", APP_KEY);
+            localStorage.setItem("app_secret", APP_SECRET);
             const authUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${APP_KEY}&response_type=code&token_access_type=offline&redirect_uri=${encodeURIComponent(REDIRECT_URI)}`;
             window.location.href = authUrl;
         }
