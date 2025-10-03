@@ -1,3 +1,9 @@
+// 页面加载时检查是否带有授权码
+const code = getQueryParam("code");
+if (code) {
+    exchangeCodeForTokens(code);
+}
+
 // 获取 URL 参数
 function getQueryParam(name) {
     return new URLSearchParams(window.location.search).get(name);
