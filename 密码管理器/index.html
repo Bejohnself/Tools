@@ -22,6 +22,7 @@
     <script src="passwordManager.js" defer></script>
     <script src="importExport.js" defer></script>
     <script src="main.js" defer></script>
+    <script src="sync.js" defer></script>
 </head>
 
 <body>
@@ -100,7 +101,7 @@
                         <button class="action-btn" onclick="showSettings()" title="设置">
                             ⚙️
                         </button>
-                        <button class="action-btn" onclick="待填" title="云同步">
+                        <button class="action-btn" onclick="showView('sync')" title="云同步">
                             🔄
                         </button>
                         <button class="action-btn" onclick="toggleShortcutHelp()" title="快捷键说明">
@@ -655,6 +656,55 @@ website,username,password,notes
                         <li>怕你不知道，悄悄告诉你，设置中可自定义快捷键哦😉</li>
                     </ul>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 云同步页面 -->
+    <div id="syncPage" class="page">
+        <div class="content-container">
+            <div class="page-header">
+                <button class="back-btn" onclick="showMainPage()">
+                    <i>←</i> 返回
+                </button>
+                <h2>云同步设置</h2>
+            </div>
+
+            <div class="sync-section">
+                <h3>Dropbox 账户配置</h3>
+                <div class="input-group">
+                    <label>App Key</label>
+                    <input type="text" id="app_key" placeholder="请输入Dropbox App Key">
+                </div>
+                <div class="input-group">
+                    <label>App Secret</label>
+                    <input type="password" id="app_secret" placeholder="请输入Dropbox App Secret">
+                </div>
+
+                <div class="sync-actions">
+                    <button class="primary-btn" onclick="saveToDropbox(id='try')">
+                        🔑 授权连接
+                    </button>
+                    <button class="secondary-btn" onclick="syncData()">
+                        🔄 手动同步
+                    </button>
+                </div>
+            </div>
+
+            <div id="syncStatusSection" class="sync-section" style="display:none;">
+                <div class="status-indicator">
+                    <span class="status-dot" id="statusDot"></span>
+                    <span id="authStatus">连接状态</span>
+                </div>
+            </div>
+
+            <div class="sync-section">
+                <h3>同步说明</h3>
+                <ol class="instructions-list">
+                    <li>输入您的Dropbox开发者App Key和Secret</li>
+                    <li>点击"授权连接"按钮完成授权</li>
+                    <li>授权成功后可使用"手动同步"功能</li>
+                </ol>
             </div>
         </div>
     </div>

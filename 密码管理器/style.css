@@ -1734,3 +1734,56 @@ kbd {
 [data-theme="night-black"] .menu-card::before {
     background: linear-gradient(90deg, #6C5CE7, #34495E);
 }
+
+/* ====================
+   云同步页面
+   ==================== */
+
+/* 云同步页面样式 */
+.sync-section {
+    background: var(--glass-bg);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+    border: 1px solid var(--glass-border);
+}
+
+.sync-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin: 25px 0;
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 10px 0;
+    font-size: 16px;
+}
+
+.status-dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.status-dot.connected {
+    background-color: #4ade80;
+}
+
+.status-dot.disconnected {
+    background-color: #f87171;
+}
+
+.instructions-list {
+    padding-left: 20px;
+    margin-top: 10px;
+}
+
+.instructions-list li {
+    margin-bottom: 8px;
+    line-height: 1.5;
+}

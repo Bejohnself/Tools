@@ -63,6 +63,42 @@ function showView(view) {
         case 'modify':
             showPage('modifyPage');
             break;
+        case 'sync':  
+            showPage('syncPage');
+            initSyncPage();
+            break;
+    }
+}
+
+// 云同步页面初始化
+function initSyncPage() {
+    if (!isAuthenticated) return;
+    
+    // 填充已保存的 App Key 和 Secret
+    const appKey = localStorage.getItem("app_key") || "";
+    const appSecret = localStorage.getItem("app_secret") || "";
+    
+    document.getElementById("app_key").value = appKey;
+    document.getElementById("app_secret").value = appSecret;
+    
+    // 检查授权状态并更新UI
+    const isAuthorized = !!localStorage.getItem("dropbox_refresh_token");
+    const syncStatusSection = document.getElementById("syncStatusSection");
+    const statusDot = document.getElementById("statusDot");
+    const authStatus = document.getElementById("authStatus");
+    
+    if (syncStatusSection) {
+        syncStatusSection.style.display = isAuthorized ? "block" : "none";
+    }
+    
+    if (statusDot && authStatus) {
+        if (isAuthorized) {
+            statusDot.className = "status-dot connected";
+            authStatus.textContent = "已连接到 Dropbox";
+        } else {
+            statusDot.className = "status-dot disconnected";
+            authStatus.textContent = "未连接到 Dropbox";
+        }
     }
 }
 

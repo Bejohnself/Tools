@@ -1,28 +1,39 @@
 // 加载密码数据
-async function loadPasswords() {
-    const storedEncryptedPasswords = localStorage.getItem(PASSWORDS_KEY);
+async function loadPasswords(from = "localstorage", res = null, save=false) {
+    let storedEncryptedPasswords = null;
+    if (from === "localstorage") {
+        storedEncryptedPasswords = localStorage.getItem(PASSWORDS_KEY);
+    }
+    else if(from === "cloud"){
+        storedEncryptedPasswords = await res.text();
+    }
+    else{
+        showError("没有对应读取方式！");
+    }
+
     if (!storedEncryptedPasswords) {
         passwords = [];
         return;
     }
-    
+
     const masterPassword = document.getElementById('masterPassword').value;
     if (!masterPassword) return;
-    
+
     // 获取主密码的盐值
     const storedData = localStorage.getItem(MASTER_PASSWORD_KEY);
     if (!storedData) return;
-    
+
     const authData = JSON.parse(storedData);
     const salt = authData.salt;
-    
+
     // 派生解密密钥
     const encryptionKey = await deriveEncryptionKey(masterPassword, salt);
-    
+
     try {
         const encryptedPasswords = JSON.parse(storedEncryptedPasswords);
+        if(save) localStorage.setItem(PASSWORDS_KEY, JSON.stringify(encryptedPasswords));
         passwords = [];
-        
+
         // 解密所有密码
         for (const encryptedPassword of encryptedPasswords) {
             const decryptedPassword = await decryptPassword(encryptedPassword.password, encryptionKey);
@@ -42,21 +53,21 @@ async function loadPasswords() {
 // 保存密码数据
 async function savePasswords() {
     if (!isAuthenticated) return;
-    
+
     const masterPassword = document.getElementById('masterPassword').value;
     if (!masterPassword) return;
-    
+
     // 获取主密码的盐值
     const storedData = localStorage.getItem(MASTER_PASSWORD_KEY);
     if (!storedData) return;
-    
+
     const authData = JSON.parse(storedData);
     const salt = authData.salt;
-    
+
     try {
         // 派生加密密钥
         const encryptionKey = await deriveEncryptionKey(masterPassword, salt);
-        
+
         // 加密所有密码
         const encryptedPasswords = [];
         for (const password of passwords) {
@@ -66,7 +77,7 @@ async function savePasswords() {
                 password: encryptedPassword
             });
         }
-        
+
         // 存储加密后的密码数据
         localStorage.setItem(PASSWORDS_KEY, JSON.stringify(encryptedPasswords));
         updateStats();
