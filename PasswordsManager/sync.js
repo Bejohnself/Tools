@@ -70,6 +70,9 @@ function startAuth() {
 
 // 上传文件到 Dropbox
 async function saveToDropbox(id="try") {
+    if (!confirm('此行为会覆盖云端数据，确认继续吗？')) {
+        return;
+    }
     const accessToken = await getAccessToken();
     if (!accessToken) {
         alert("请先授权 Dropbox");
@@ -100,6 +103,9 @@ async function saveToDropbox(id="try") {
 
 // 从 Dropbox 下载文件
 async function loadFromDropbox(id="try") {
+    if (!confirm('此行为会覆盖本地数据，确认继续吗？')) {
+        return;
+    }
     const accessToken = await getAccessToken();
     if (!accessToken) {
         alert("请先授权 Dropbox");

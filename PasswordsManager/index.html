@@ -662,36 +662,44 @@ website,username,password,notes
 
     <!-- 云同步页面 -->
     <div id="syncPage" class="page">
-        <div class="content-container">
+        <div class="content-container glass-card">
             <div class="page-header">
                 <button class="back-btn" onclick="showMainPage()">
-                    <i>←</i> 返回
+                    ← 返回
                 </button>
-                <h2>云同步设置</h2>
+                <h2>🔄 云同步设置</h2>
             </div>
 
             <div class="sync-section">
-                <h3>Dropbox 账户配置</h3>
+                <h3>☁️ Dropbox 账户配置</h3>
+                <br>
                 <div class="input-group">
-                    <label>App Key</label>
+                    <label for="app_key">🔑 App Key</label>
                     <input type="text" id="app_key" placeholder="请输入Dropbox App Key">
                 </div>
                 <div class="input-group">
-                    <label>App Secret</label>
-                    <input type="password" id="app_secret" placeholder="请输入Dropbox App Secret">
+                    <label for="app_secret">🔐 App Secret</label>
+                    <div class="password-input">
+                        <input type="password" id="app_secret" placeholder="请输入Dropbox App Secret">
+                        <button type="button" class="toggle-password"
+                            onclick="togglePasswordVisibilityInput('app_secret')">
+                            👁️
+                        </button>
+                    </div>
                 </div>
 
                 <div class="sync-actions">
                     <button class="primary-btn" onclick="saveToDropbox()">
                         ⤴ 同步上传
                     </button>
-                    <button class="secondary-btn" onclick="loadFromDropbox()">
+                    <button class="primary-btn" onclick="loadFromDropbox()">
                         ⤵ 载入本地
                     </button>
                 </div>
             </div>
 
             <div id="syncStatusSection" class="sync-section" style="display:none;">
+                <h3>📶 连接状态</h3>
                 <div class="status-indicator">
                     <span class="status-dot" id="statusDot"></span>
                     <span id="authStatus">连接状态</span>
@@ -699,11 +707,12 @@ website,username,password,notes
             </div>
 
             <div class="sync-section">
-                <h3>同步说明</h3>
+                <h3>📘 同步说明</h3>
                 <ol class="instructions-list">
+                    <li>在 <a href="https://www.dropbox.com/developers/apps" target="_blank">Dropbox开发者网站</a> 创建应用并获取App
+                        Key和Secret</li>
                     <li>输入您的Dropbox开发者App Key和Secret</li>
-                    <li>点击"授权连接"按钮完成授权</li>
-                    <li>授权成功后可使用"手动同步"功能</li>
+                    <li>点击"同步上传"或"载入本地"按钮完成授权并使用同步功能</li>
                 </ol>
             </div>
         </div>

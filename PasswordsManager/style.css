@@ -1787,3 +1787,23 @@ kbd {
     margin-bottom: 8px;
     line-height: 1.5;
 }
+
+/* 云同步页面输入框样式 */
+#syncPage .input-group input[type="text"],
+#syncPage .input-group input[type="password"] {
+    width: 100%;
+    padding: 15px;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    font-size: 16px;
+    background: var(--card-background);
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+}
+
+#syncPage .input-group input[type="text"]:focus,
+#syncPage .input-group input[type="password"]:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+}
