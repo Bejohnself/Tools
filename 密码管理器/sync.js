@@ -93,7 +93,7 @@ async function saveToDropbox(id) {
 }
 
 // 从 Dropbox 下载文件
-async function loadFromDropbox(id, masterPassword) {
+async function loadFromDropbox(id) {
     const accessToken = await getAccessToken();
     if (!accessToken) {
         alert("请先授权 Dropbox");
