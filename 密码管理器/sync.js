@@ -110,7 +110,7 @@ async function loadFromDropbox(id="try") {
     });
 
     if (res.ok) {
-        loadPasswords(from="cloud",res=res,save=true);
+        loadPasswords(from="cloud",res);
         savePasswords();
         showNotification("解密成功！");
     } else {

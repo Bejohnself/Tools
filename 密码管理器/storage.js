@@ -1,5 +1,5 @@
 // 加载密码数据
-async function loadPasswords(from = "localstorage", res = null, save=false) {
+async function loadPasswords(from = "localstorage", res = null) {
     let storedEncryptedPasswords = null;
     if (from === "localstorage") {
         storedEncryptedPasswords = localStorage.getItem(PASSWORDS_KEY);
