@@ -1197,11 +1197,6 @@ input[type="checkbox"]:checked::after {
     margin-top: 40px;
 }
 
-/* 表单组间距 */
-.input-group {
-    margin-bottom: 25px;
-}
-
 .key-input {
     width: 100%;
     padding: 15px;
@@ -1789,8 +1784,7 @@ kbd {
 }
 
 /* 云同步页面输入框样式 */
-#syncPage .input-group input[type="text"],
-#syncPage .input-group input[type="password"] {
+#syncPage .input-group input[type="text"] {
     width: 100%;
     padding: 15px;
     border: 2px solid var(--border-color);
@@ -1801,8 +1795,7 @@ kbd {
     transition: all 0.3s ease;
 }
 
-#syncPage .input-group input[type="text"]:focus,
-#syncPage .input-group input[type="password"]:focus {
+#syncPage .input-group input[type="text"]:focus {
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
