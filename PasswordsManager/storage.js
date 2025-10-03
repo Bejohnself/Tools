@@ -1,15 +1,6 @@
 // 加载密码数据
-async function loadPasswords(from = "localstorage", res = null) {
-    let storedEncryptedPasswords = null;
-    if (from === "localstorage") {
-        storedEncryptedPasswords = localStorage.getItem(PASSWORDS_KEY);
-    }
-    else if(from === "cloud"){
-        storedEncryptedPasswords = await res.text();
-    }
-    else{
-        showError("没有对应读取方式！");
-    }
+async function loadPasswords() {
+    const storedEncryptedPasswords = localStorage.getItem(PASSWORDS_KEY);
 
     if (!storedEncryptedPasswords) {
         passwords = [];

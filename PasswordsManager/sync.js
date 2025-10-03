@@ -80,6 +80,12 @@ async function saveToDropbox(id="try") {
         return;
     }
 
+    // 创建包含密码数据和认证数据的完整包
+    const syncData = {
+        passwords: localStorage.getItem(PASSWORDS_KEY),
+        auth: localStorage.getItem(MASTER_PASSWORD_KEY)
+    };
+
     const res = await fetch("https://content.dropboxapi.com/2/files/upload", {
         method: "POST",
         headers: {
@@ -91,7 +97,7 @@ async function saveToDropbox(id="try") {
             }),
             "Content-Type": "application/octet-stream"
         },
-        body: localStorage.getItem(PASSWORDS_KEY)
+        body: JSON.stringify(syncData)
     });
 
     if (res.ok) {
@@ -122,9 +128,21 @@ async function loadFromDropbox(id="try") {
     });
 
     if (res.ok) {
-        loadPasswords(from="cloud",res);
-        savePasswords();
-        showNotification("解密成功！");
+        const syncData = await res.json();
+        
+        // 同步认证数据（盐值等）
+        if (syncData.auth) {
+            localStorage.setItem(MASTER_PASSWORD_KEY, syncData.auth);
+        }
+        
+        // 同步密码数据
+        if (syncData.passwords) {
+            localStorage.setItem(PASSWORDS_KEY, syncData.passwords);
+        }
+        
+        // 重新加载密码数据
+        await loadPasswords();
+        showNotification("数据同步成功！");
     } else {
         showError("读取失败：" + await res.text());
     }
