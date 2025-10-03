@@ -31,7 +31,7 @@ async function loadPasswords(from = "localstorage", res = null, save=false) {
 
     try {
         const encryptedPasswords = JSON.parse(storedEncryptedPasswords);
-        if(save) localStorage.setItem(PASSWORDS_KEY, JSON.stringify(encryptedPasswords));
+        // if(save) localStorage.setItem(PASSWORDS_KEY, JSON.stringify(encryptedPasswords));
         passwords = [];
 
         // 解密所有密码

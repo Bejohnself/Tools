@@ -111,6 +111,7 @@ async function loadFromDropbox(id) {
 
     if (res.ok) {
         loadPasswords(from="cloud",res=res,save=true);
+        savePasswords();
         showNotification("解密成功！");
     } else {
         showError("读取失败：" + await res.text());
