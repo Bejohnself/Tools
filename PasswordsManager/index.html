@@ -709,9 +709,14 @@ website,username,password,notes
             <div class="sync-section">
                 <h3>📘 同步说明</h3>
                 <ol class="instructions-list">
-                    <li>在 <a href="https://www.dropbox.com/developers/apps" target="_blank">Dropbox开发者网站</a> 创建应用并获取App
-                        Key和Secret</li>
-                    <li>输入您的Dropbox开发者App Key和Secret</li>
+                    <li>在 <a href="https://www.dropbox.com/developers/apps" target="_blank">Dropbox开发者网站</a> 创建应用</li>
+                    <li>在 Settings 界面获取 App key 和 Secret, 同时在 Redirect URIs 处添加 "https://bejohnself.github.io/Tools/PasswordsManager/", 并选择 Allow 
+                        <br><img src="img1.png" alt="Settings界面示意图" style="max-width: 100%; height: auto; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px;">
+                    </li>
+                    <li>在 Permissions 界面勾选"files.content.write"和"files.content.read"
+                        <br><img src="img2.png" alt="Permissions界面示意图" style="max-width: 100%; height: auto; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px;">
+                    </li>
+                    <li>输入您的 Dropbox 开发者 App key 和 Secret </li>
                     <li>点击"同步上传"或"载入本地"按钮完成授权并使用同步功能</li>
                 </ol>
             </div>
