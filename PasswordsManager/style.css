@@ -92,6 +92,21 @@
     --border-color: rgba(255, 255, 255, 0.1);
     --glass-bg: rgba(255, 255, 255, 0.08);
     --glass-border: rgba(255, 255, 255, 0.12);
+    /* 添加链接样式 */
+    a {
+        color: var(--info-color); /* 使用info颜色的蓝色系 */
+        text-decoration: none;
+        transition: color 0.3s ease;
+    }
+    
+    a:hover {
+        color: var(--primary-light); /* 悬停时使用主色调的亮色 */
+        text-decoration: underline;
+    }
+    
+    a:visited {
+        color: var(--primary-color); /* 访问过的链接使用主色 */
+    }
 }
 
 /* ====================
