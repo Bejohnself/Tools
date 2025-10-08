@@ -7,11 +7,11 @@ function generateSalt() {
 async function secureHash(password, salt) {
     const encoder = new TextEncoder();
     const data = encoder.encode(password + salt);
-    
+
     // 使用 SHA-256 哈希算法
     const hashBuffer = await crypto.subtle.digest('SHA-256', data);
     const hashArray = Array.from(new Uint8Array(hashBuffer));
-    
+
     // 转换为十六进制字符串
     return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
@@ -39,13 +39,13 @@ async function handleLogin() {
         // 首次设置主密码
         const salt = generateSalt();
         const hashedPassword = await secureHash(masterPassword, salt);
-        
+
         // 存储盐值和哈希值
         const authData = {
             salt: salt,
             hash: hashedPassword
         };
-        
+
         localStorage.setItem(MASTER_PASSWORD_KEY, JSON.stringify(authData));
         isAuthenticated = true;
         passwords = []; // 初始化空密码数组
@@ -57,7 +57,7 @@ async function handleLogin() {
         // 验证主密码
         const authData = JSON.parse(storedData);
         const hashedInput = await secureHash(masterPassword, authData.salt);
-        
+
         if (hashedInput === authData.hash) {
             isAuthenticated = true;
             await loadPasswords();
@@ -73,10 +73,14 @@ async function handleLogin() {
 // 退出函数
 function logout() {
     isAuthenticated = false;
-    document.getElementById('masterPassword').value = '';
-    showPage('loginPage');
-    showNotification('已退出登录');
-    // 数据保留在localStorage中，用户重新登录后可以访问
+    if (document.getElementById('masterPassword') === null) {
+        location.reload();
+    }
+    else {
+        document.getElementById('masterPassword').value = '';
+        showPage('loginPage');
+        showNotification('已退出登录');
+    }
 }
 
 /**
@@ -94,7 +98,7 @@ async function deriveEncryptionKey(masterPassword, salt) {
         false,
         ["deriveKey"]
     );
-    
+
     return crypto.subtle.deriveKey(
         {
             name: "PBKDF2",
@@ -118,7 +122,7 @@ async function deriveEncryptionKey(masterPassword, salt) {
 async function encryptPassword(plaintext, key) {
     const encoder = new TextEncoder();
     const iv = crypto.getRandomValues(new Uint8Array(12)); // AES-GCM推荐使用12字节IV
-    
+
     const ciphertext = await crypto.subtle.encrypt(
         {
             name: "AES-GCM",
@@ -127,7 +131,7 @@ async function encryptPassword(plaintext, key) {
         key,
         encoder.encode(plaintext)
     );
-    
+
     return {
         ciphertext: Array.from(new Uint8Array(ciphertext)),
         iv: Array.from(iv)
@@ -143,7 +147,7 @@ async function encryptPassword(plaintext, key) {
 async function decryptPassword(encryptedData, key) {
     const ciphertext = new Uint8Array(encryptedData.ciphertext);
     const iv = new Uint8Array(encryptedData.iv);
-    
+
     const plaintext = await crypto.subtle.decrypt(
         {
             name: "AES-GCM",
@@ -152,7 +156,7 @@ async function decryptPassword(encryptedData, key) {
         key,
         ciphertext
     );
-    
+
     const decoder = new TextDecoder();
     return decoder.decode(plaintext);
 }
