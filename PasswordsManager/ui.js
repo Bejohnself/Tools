@@ -212,26 +212,26 @@ function showSetMasterPassword() {
             <p class="subtitle">首次使用 - 设置主密码</p>
         </div>
         
-        <form id="setPasswordForm" class="login-form">
+        <form id="setFirstPasswordForm" class="login-form">
             <div class="input-group">
-                <label for="newMasterPassword">
+                <label for="newFirstMasterPassword">
                     🔑 设置主密码
                 </label>
                 <div class="password-input">
-                    <input type="password" id="newMasterPassword" placeholder="请输入主密码" required>
-                    <button type="button" class="toggle-password" onclick="togglePasswordVisibilityInput('newMasterPassword')">
+                    <input type="password" id="newFirstMasterPassword" placeholder="请输入主密码" required>
+                    <button type="button" class="toggle-password" onclick="togglePasswordVisibilityInput('newFirstMasterPassword')">
                         👁️
                     </button>
                 </div>
             </div>
             
             <div class="input-group">
-                <label for="confirmMasterPassword">
+                <label for="confirmFirstMasterPassword">
                     ✅ 确认主密码
                 </label>
                 <div class="password-input">
-                    <input type="password" id="confirmMasterPassword" placeholder="请再次输入主密码" required>
-                    <button type="button" class="toggle-password" onclick="togglePasswordVisibilityInput('confirmMasterPassword')">
+                    <input type="password" id="confirmFirstMasterPassword" placeholder="请再次输入主密码" required>
+                    <button type="button" class="toggle-password" onclick="togglePasswordVisibilityInput('confirmFirstMasterPassword')">
                         👁️
                     </button>
                 </div>
@@ -258,10 +258,10 @@ function showSetMasterPassword() {
     `;
 
     // 替换 showSetMasterPassword 函数中的表单提交事件处理程序
-    document.getElementById('setPasswordForm').addEventListener('submit', async function (e) {
+    document.getElementById('setFirstPasswordForm').addEventListener('submit', async function (e) {
         e.preventDefault();
-        const newPassword = document.getElementById('newMasterPassword').value;
-        const confirmPassword = document.getElementById('confirmMasterPassword').value;
+        const newPassword = document.getElementById('newFirstMasterPassword').value;
+        const confirmPassword = document.getElementById('confirmFirstMasterPassword').value;
 
         if (newPassword !== confirmPassword) {
             showError('两次输入的密码不一致！', 'setPasswordError');

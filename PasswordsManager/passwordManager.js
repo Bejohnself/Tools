@@ -158,7 +158,6 @@ function deletePassword(id) {
 }
 
 // 处理主密码修改
-// 修复 handleChangeMasterPassword 函数
 async function handleChangeMasterPassword() {
     const oldPassword = document.getElementById('oldMasterPassword').value;
     const newPassword = document.getElementById('newMasterPassword').value;
