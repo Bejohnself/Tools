@@ -42,10 +42,23 @@ async function loadPasswords() {
 }
 
 // 保存密码数据
-async function savePasswords() {
+async function savePasswords(mpwd = "") {
     if (!isAuthenticated) return;
 
-    const masterPassword = document.getElementById('masterPassword').value;
+    // 处理第一次登录的情况
+    let masterPassword;
+    if (!mpwd) {
+        if (document.getElementById('masterPassword') === null) {
+            masterPassword = document.getElementById('newFirstMasterPassword').value;
+        }
+        else {
+            masterPassword = document.getElementById('masterPassword').value;
+        }
+    }
+    else{
+        masterPassword = mpwd;
+    }
+
     if (!masterPassword) return;
 
     // 获取主密码的盐值

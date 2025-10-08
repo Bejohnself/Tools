@@ -208,6 +208,7 @@ async function handleChangeMasterPassword() {
     };
 
     localStorage.setItem(MASTER_PASSWORD_KEY, JSON.stringify(newAuthData));
+    await savePasswords(mpwd=document.getElementById("newMasterPassword").value);
     showNotification('主密码修改成功！请重新登录');
     logout(); // 修改成功后退出登录，要求用户用新密码重新登录
 }
