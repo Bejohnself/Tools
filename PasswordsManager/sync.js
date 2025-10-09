@@ -132,13 +132,8 @@ async function loadFromDropbox(id = "try") {
 
         // 同步认证数据（盐值等）
         if (syncData.auth) {
-            // 增加主密码相同验证
-            const masterPassword = getMasterPassword();
-            const hashedInput = await secureHash(masterPassword, syncData.auth.salt);
-            if (hashedInput !== syncData.auth.hash) {
-                if (!confirm("主密码与云端数据不匹配，是否仍然继续同步？若继续，将使用云端主密码数据覆盖本地")) {
-                    return; // 用户选择取消则直接返回
-                }
+            if (!confirm("若本地主密码与云端同步时的主密码不一致，将使用云端主密码数据覆盖本地，是否继续？")) {
+                return; // 用户选择取消则直接返回
             }
             localStorage.setItem(MASTER_PASSWORD_KEY, syncData.auth);
         }
