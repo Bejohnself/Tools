@@ -144,7 +144,14 @@ async function loadFromDropbox(id = "try") {
         }
 
         // 重新加载密码数据
-        await loadPasswords();
+        try {
+            await loadPasswords();
+        } catch (error) {
+            document.getElementById('masterPassword').value = '';
+            showPage('loginPage');
+            showNotification("主密码已覆盖，请重新登录");
+        }
+
         showNotification("数据同步成功！");
     } else {
         showError("读取失败：" + await res.text());
