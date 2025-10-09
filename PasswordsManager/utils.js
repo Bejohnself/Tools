@@ -117,7 +117,14 @@ function setupKeyInputListeners() {
 }
 
 // 获取输入框中的主密码
-function getMasterPassword() {
+function getMasterPassword(_new_ = false) {
+    if (_new_) {
+        const newMasterPasswordElement = document.getElementById('newMasterPassword');
+        if (newMasterPasswordElement) {
+            return newMasterPasswordElement.value;
+        }
+    }
+
     const masterPasswordElement = document.getElementById('masterPassword');
     if (masterPasswordElement) {
         return masterPasswordElement.value;

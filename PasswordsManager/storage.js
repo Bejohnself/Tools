@@ -7,7 +7,7 @@ async function loadPasswords() {
         return;
     }
 
-    const masterPassword = document.getElementById('masterPassword').value;
+    const masterPassword = getMasterPassword();
     if (!masterPassword) return;
 
     // 获取主密码的盐值
@@ -42,10 +42,10 @@ async function loadPasswords() {
 }
 
 // 保存密码数据
-async function savePasswords() {
+async function savePasswords(_new=false) {
     if (!isAuthenticated) return;
 
-    const masterPassword = getMasterPassword();
+    const masterPassword = getMasterPassword(_new);
 
     if (!masterPassword) return;
 
