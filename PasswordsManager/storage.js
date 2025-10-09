@@ -42,22 +42,10 @@ async function loadPasswords() {
 }
 
 // 保存密码数据
-async function savePasswords(mpwd = "") {
+async function savePasswords() {
     if (!isAuthenticated) return;
 
-    // 处理第一次登录的情况
-    let masterPassword;
-    if (!mpwd) {
-        if (document.getElementById('masterPassword') === null) {
-            masterPassword = document.getElementById('newFirstMasterPassword').value;
-        }
-        else {
-            masterPassword = document.getElementById('masterPassword').value;
-        }
-    }
-    else{
-        masterPassword = mpwd;
-    }
+    const masterPassword = getMasterPassword();
 
     if (!masterPassword) return;
 

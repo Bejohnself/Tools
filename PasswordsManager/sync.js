@@ -69,7 +69,7 @@ function startAuth() {
 }
 
 // 上传文件到 Dropbox
-async function saveToDropbox(id="try") {
+async function saveToDropbox(id = "try") {
     if (!confirm('此行为会覆盖云端数据，确认继续吗？')) {
         return;
     }
@@ -108,7 +108,7 @@ async function saveToDropbox(id="try") {
 }
 
 // 从 Dropbox 下载文件
-async function loadFromDropbox(id="try") {
+async function loadFromDropbox(id = "try") {
     if (!confirm('此行为会覆盖本地数据，确认继续吗？')) {
         return;
     }
@@ -129,17 +129,25 @@ async function loadFromDropbox(id="try") {
 
     if (res.ok) {
         const syncData = await res.json();
-        
+
         // 同步认证数据（盐值等）
         if (syncData.auth) {
+            // 增加主密码相同验证
+            const masterPassword = getMasterPassword();
+            const hashedInput = await secureHash(masterPassword, syncData.auth.salt);
+            if (hashedInput !== syncData.auth.hash) {
+                if (!confirm("主密码与云端数据不匹配，是否仍然继续同步？若继续，将使用云端主密码数据覆盖本地")) {
+                    return; // 用户选择取消则直接返回
+                }
+            }
             localStorage.setItem(MASTER_PASSWORD_KEY, syncData.auth);
         }
-        
+
         // 同步密码数据
         if (syncData.passwords) {
             localStorage.setItem(PASSWORDS_KEY, syncData.passwords);
         }
-        
+
         // 重新加载密码数据
         await loadPasswords();
         showNotification("数据同步成功！");

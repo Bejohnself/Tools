@@ -115,3 +115,18 @@ function setupKeyInputListeners() {
         });
     });
 }
+
+// 获取输入框中的主密码
+function getMasterPassword() {
+    const masterPasswordElement = document.getElementById('masterPassword');
+    if (masterPasswordElement) {
+        return masterPasswordElement.value;
+    }
+
+    const newFirstMasterPasswordElement = document.getElementById('newFirstMasterPassword');
+    if (newFirstMasterPasswordElement) {
+        return newFirstMasterPasswordElement.value;
+    }
+
+    return '';
+}
