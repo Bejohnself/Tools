@@ -129,17 +129,19 @@ async function loadFromDropbox(id = "try") {
 
     if (res.ok) {
         const syncData = await res.json();
-
         // 同步认证数据（盐值等）
         if (syncData.auth) {
+            const authData = JSON.parse(syncData.auth);  // 解析 auth 字符串
+
             if (!confirm("若本地主密码与云端同步时的主密码不一致，将使用云端主密码数据覆盖本地，是否继续？")) {
-                return; // 用户选择取消则直接返回
+                return;
             }
             localStorage.setItem(MASTER_PASSWORD_KEY, syncData.auth);
+
+            console.log("云端盐值:  ", authData.salt);
+            console.log("本地主密码与云端盐值哈希:  ", secureHash(getMasterPassword(), authData.salt))
+            console.log("云端主密码与云端盐值哈希:  ", authData.hash);
         }
-        console.log("云端盐值:  ",syncData.auth.salt);
-        console.log("本地主密码与云端盐值哈希:  ", secureHash(getMasterPassword(), syncData.auth.salt))
-        console.log("云端主密码与与云端盐值哈希:  ", syncData.auth.hash);
 
         // 同步密码数据
         if (syncData.passwords) {
