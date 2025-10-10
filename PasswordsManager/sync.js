@@ -131,16 +131,19 @@ async function loadFromDropbox(id = "try") {
         const syncData = await res.json();
         // 同步认证数据（盐值等）
         if (syncData.auth) {
+            let same = true;
             const authData = JSON.parse(syncData.auth);  // 解析 auth 字符串
-
-            if (!confirm("若本地主密码与云端同步时的主密码不一致，将使用云端主密码数据覆盖本地，是否继续？")) {
-                return;
+            if (secureHash(getMasterPassword(), authData.salt) !== authData.hash) {
+                if (!confirm("本地主密码与云端同步时的主密码不一致，将使用云端主密码数据覆盖本地，是否继续？")) {
+                    return;
+                }
+                same = false;
             }
             localStorage.setItem(MASTER_PASSWORD_KEY, syncData.auth);
 
-            console.log("云端盐值:  ", authData.salt);
-            console.log("本地主密码与云端盐值哈希:  ", secureHash(getMasterPassword(), authData.salt))
-            console.log("云端主密码与云端盐值哈希:  ", authData.hash);
+            // console.log("云端盐值:  ", authData.salt);
+            // console.log("本地主密码与云端盐值哈希:  ", secureHash(getMasterPassword(), authData.salt))
+            // console.log("云端主密码与云端盐值哈希:  ", authData.hash);
         }
 
         // 同步密码数据
@@ -149,15 +152,16 @@ async function loadFromDropbox(id = "try") {
         }
 
         // 重新加载密码数据
-        try {
+        if (same) {
             await loadPasswords();
-        } catch (error) {
+            showNotification("数据同步成功！");
+        }
+        else {
             document.getElementById('masterPassword').value = '';
             showPage('loginPage');
+            showNotification("数据同步成功！");
             showNotification("主密码已覆盖，请重新登录");
         }
-
-        showNotification("数据同步成功！");
     } else {
         showError("读取失败：" + await res.text());
     }
