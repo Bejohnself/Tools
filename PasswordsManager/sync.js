@@ -129,9 +129,10 @@ async function loadFromDropbox(id = "try") {
 
     if (res.ok) {
         const syncData = await res.json();
+        let same = true;
         // 同步认证数据（盐值等）
         if (syncData.auth) {
-            let same = true;
+            
             const authData = JSON.parse(syncData.auth);  // 解析 auth 字符串
             if (secureHash(getMasterPassword(), authData.salt) !== authData.hash) {
                 if (!confirm("本地主密码与云端同步时的主密码不一致，将使用云端主密码数据覆盖本地，是否继续？")) {
