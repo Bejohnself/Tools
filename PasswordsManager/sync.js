@@ -134,7 +134,8 @@ async function loadFromDropbox(id = "try") {
         if (syncData.auth) {
             
             const authData = JSON.parse(syncData.auth);  // 解析 auth 字符串
-            if (secureHash(getMasterPassword(), authData.salt) !== authData.hash) {
+            const localpwdhash =  await secureHash(getMasterPassword(), authData.salt);
+            if (localpwdhash !== authData.hash) {
                 if (!confirm("本地主密码与云端同步时的主密码不一致，将使用云端主密码数据覆盖本地，是否继续？")) {
                     return;
                 }
@@ -143,7 +144,7 @@ async function loadFromDropbox(id = "try") {
             localStorage.setItem(MASTER_PASSWORD_KEY, syncData.auth);
 
             console.log("云端盐值:  ", authData.salt);
-            console.log("本地主密码与云端盐值哈希:  ", secureHash(getMasterPassword(), authData.salt))
+            console.log("本地主密码与云端盐值哈希:  ", localpwdhash)
             console.log("云端主密码与云端盐值哈希:  ", authData.hash);
         }
 
