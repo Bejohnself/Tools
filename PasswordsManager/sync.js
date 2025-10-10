@@ -143,9 +143,9 @@ async function loadFromDropbox(id = "try") {
             }
             localStorage.setItem(MASTER_PASSWORD_KEY, syncData.auth);
 
-            console.log("云端盐值:  ", authData.salt);
-            console.log("本地主密码与云端盐值哈希:  ", localpwdhash)
-            console.log("云端主密码与云端盐值哈希:  ", authData.hash);
+            // console.log("云端盐值:  ", authData.salt);
+            // console.log("本地主密码与云端盐值哈希:  ", localpwdhash)
+            // console.log("云端主密码与云端盐值哈希:  ", authData.hash);
         }
 
         // 同步密码数据
