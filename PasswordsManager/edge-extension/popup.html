@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Password Manager</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="container">
+      <header class="topbar">
+        <div class="title-row">
+          <h1>🔐 Be的密码管理中心</h1>
+          <button id="themeToggleBtn" class="btn secondary mini theme-toggle" type="button" aria-label="切换主题" title="切换主题">&#x263D;</button>
+        </div>
+        <p class="subtitle">本地加密 · 手动触发填充</p>
+        <div class="status-row">
+          <span id="statusBadge" class="badge">检测中</span>
+          <span id="bindingBadge" class="badge binding">网页主密码：未绑定</span>
+        </div>
+      </header>
+
+
+      <section id="setupPanel" class="panel card hidden">
+        <h2>首次使用</h2>
+        <p>请先打开网页版密码管理器，并输入网页主密码进行初始化</p>
+        <input id="setupPassword" type="password" placeholder="输入网页主密码" />
+        <button id="setupBtn" class="btn primary">从当前网页初始化</button>
+      </section>
+
+
+      <section id="unlockPanel" class="panel card hidden">
+        <h2>已锁定</h2>
+        <p>输入主密码解锁</p>
+        <input id="unlockPassword" type="password" placeholder="输入主密码" />
+        <button id="unlockBtn" class="btn primary">解锁</button>
+      </section>
+
+      <section id="unlockedPanel" class="panel card hidden">
+        <h2>已解锁</h2>
+        <p id="vaultCount">当前记录数：0</p>
+        <p id="newSinceImport" class="hint">自上次网页导入后新增：0 条</p>
+
+        <div class="import-box">
+          <label class="checkbox-row">
+            <input id="replaceMode" type="checkbox" />
+            <span>导入时覆盖扩展数据</span>
+          </label>
+          <label class="checkbox-row">
+            <input id="autoSyncToWeb" type="checkbox" />
+            <span>新增后自动同步到当前网页</span>
+          </label>
+          <button id="importBtn" class="btn secondary">从当前网页导入</button>
+          <button id="syncToWebBtn" class="btn secondary">将扩展新增写回网页</button>
+        </div>
+
+
+        <div class="manual-box">
+          <h3>手动新增密码</h3>
+          <input id="addWebsite" type="text" placeholder="自动识别当前网站域名" readonly />
+          <input id="addUsername" type="text" placeholder="用户名" />
+          <div class="inline-row">
+            <input id="addPassword" type="password" placeholder="密码" />
+            <button id="genPasswordBtn" class="btn secondary mini" type="button">生成</button>
+          </div>
+          <label class="checkbox-row">
+            <input id="addAutoTimestamp" type="checkbox" />
+            <span>保存时在备注追加时间戳</span>
+          </label>
+          <input id="addNotes" type="text" placeholder="备注（可选）" />
+          <button id="addBtn" class="btn primary">保存到扩展</button>
+        </div>
+
+        <div class="btn-grid">
+          <button id="refreshBtn" class="btn secondary">刷新状态</button>
+          <button id="lockBtn" class="btn danger">锁定</button>
+        </div>
+      </section>
+
+
+      <p id="message" class="message"></p>
+    </main>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>
+
