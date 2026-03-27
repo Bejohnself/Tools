@@ -1,0 +1,6 @@
+{
+  "workbench.colorTheme": "Default Dark Modern",
+  "scm.diffDecorations": "none",
+  "r.lsp.diagnostics": false,
+  "chatgpt.openOnStartup": false
+}
