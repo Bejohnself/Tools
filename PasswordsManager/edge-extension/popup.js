@@ -7,8 +7,10 @@ const newSinceImportEl = document.getElementById('newSinceImport');
 const statusBadgeEl = document.getElementById('statusBadge');
 const bindingBadgeEl = document.getElementById('bindingBadge');
 const themeToggleBtn = document.getElementById('themeToggleBtn');
+const openWebAppBtn = document.getElementById('openWebAppBtn');
 
 const POPUP_THEME_KEY = 'pm_ext_popup_theme';
+const WEB_APP_URL = 'https://bejohnself.github.io/Tools/PasswordsManager/';
 
 function applyTheme(theme) {
   const normalized = theme === 'dark' ? 'dark' : 'light';
@@ -219,15 +221,19 @@ async function pushExtensionNewDataToWebApp(autoReload = false) {
     };
   }
 
-  if (!exportResult.count) {
+  const addCount = Number(exportResult.count || 0);
+  const deleteCount = Number(exportResult.deleteCount || 0);
 
+  if (!addCount && !deleteCount) {
     return {
       ok: true,
       count: 0,
-      message: '没有需要同步到网页的新增记录',
-      debug: { tabUrl: activeTab.url || '', exported: 0 }
+      deleteCount: 0,
+      message: '没有需要同步到网页的变更',
+      debug: { tabUrl: activeTab.url || '', exported: 0, deleted: 0 }
     };
   }
+
 
   const writeResult = await chrome.tabs
     .sendMessage(activeTab.id, {
@@ -235,9 +241,11 @@ async function pushExtensionNewDataToWebApp(autoReload = false) {
       payload: {
         authRaw: exportResult.authRaw,
         passwordsRaw: exportResult.passwordsRaw,
+        deletesRaw: exportResult.deletesRaw || '[]',
         autoReload,
         mode: 'merge'
       }
+
     })
     .catch((error) => ({ ok: false, message: String(error?.message || error) }));
 
@@ -250,14 +258,25 @@ async function pushExtensionNewDataToWebApp(autoReload = false) {
     };
   }
 
+  await sendMessage({
+    type: 'CONFIRM_EXPORT_TO_WEB_APP',
+    payload: {
+      hadExport: true,
+      syncedDeleteOpIds: Array.isArray(exportResult.deleteOpIds) ? exportResult.deleteOpIds : []
+    }
+  });
+
   return {
     ok: true,
-    count: exportResult.count,
+    count: addCount,
+    deleteCount,
     reloaded: Boolean(writeResult.reloaded),
     debug: {
       tabUrl: activeTab.url || '',
-      exported: exportResult.count,
+      exported: addCount,
+      deleted: deleteCount,
       imported: writeResult.imported || 0,
+      webDeleted: writeResult.deleted || 0,
       total: writeResult.total || 0
     }
   };
@@ -295,7 +314,9 @@ async function refreshStatus() {
   vaultCountEl.textContent = `当前记录数：${status.count}`;
   if (newSinceImportEl) {
     const sinceText = formatImportTime(status.lastWebImportAt);
-    newSinceImportEl.textContent = `自上次网页导入后新增：${status.newSinceImport || 0} 条（${sinceText}）`;
+    const pendingDeleteCount = Number(status.pendingDeleteCount || 0);
+    newSinceImportEl.textContent = `自上次网页导入后新增：${status.newSinceImport || 0} 条，待同步删除：${pendingDeleteCount} 条（${sinceText}）`;
+
   }
   await syncActiveWebsiteToInput();
   setMessage('已解锁，点击输入框可手动填充');
@@ -431,9 +452,12 @@ document.getElementById('syncToWebBtn').addEventListener('click', async () => {
   }
 
   const debugText = result?.debug
-    ? ` | exported=${result.debug.exported ?? 0}, imported=${result.debug.imported ?? 0}, total=${result.debug.total ?? 0}`
+    ? ` | exported=${result.debug.exported ?? 0}, deleted=${result.debug.deleted ?? 0}, imported=${result.debug.imported ?? 0}, total=${result.debug.total ?? 0}`
     : '';
-  setMessage(result.count ? `已同步 ${result.count} 条新增记录到网页${debugText}` : (result.message || '无需同步'));
+  const addCount = Number(result?.count || 0);
+  const deleteCount = Number(result?.deleteCount || 0);
+  const changed = addCount + deleteCount;
+  setMessage(changed ? `已同步变更 ${changed} 条（新增 ${addCount} / 删除 ${deleteCount}）${debugText}` : (result.message || '无需同步'));
 });
 
 
@@ -482,22 +506,7 @@ document.getElementById('addBtn').addEventListener('click', async () => {
   document.getElementById('addPassword').value = '';
   document.getElementById('addNotes').value = '';
 
-  const autoSyncToWeb = Boolean(document.getElementById('autoSyncToWeb')?.checked);
-  if (autoSyncToWeb) {
-    const syncResult = await pushExtensionNewDataToWebApp(false);
-    if (syncResult?.ok) {
-      const debugText = syncResult?.debug
-        ? ` | exported=${syncResult.debug.exported ?? 0}, imported=${syncResult.debug.imported ?? 0}, total=${syncResult.debug.total ?? 0}`
-        : '';
-      setMessage(syncResult.count ? `保存成功，并已同步 ${syncResult.count} 条到网页${debugText}` : '保存成功，当前无新增可同步');
-    } else {
-      const stageText = syncResult?.stage ? `（阶段: ${syncResult.stage}）` : '';
-      setMessage(`保存成功，但自动同步失败：${syncResult?.message || '未知错误'}${stageText}`, true);
-    }
-  } else {
-
-    setMessage(result.added ? '新增成功' : '已存在同用户名记录，已更新密码');
-  }
+  setMessage(result.added ? '新增成功' : '已存在同用户名记录，已更新密码');
   await refreshStatus();
 });
 
@@ -506,6 +515,12 @@ document.getElementById('refreshBtn').addEventListener('click', refreshStatus);
 if (themeToggleBtn) {
   themeToggleBtn.addEventListener('click', toggleTheme);
 }
+if (openWebAppBtn) {
+  openWebAppBtn.addEventListener('click', async () => {
+    await chrome.tabs.create({ url: WEB_APP_URL });
+  });
+}
+
 
 const addAutoTimestampEl = document.getElementById('addAutoTimestamp');
 

@@ -18,6 +18,7 @@
           <span id="statusBadge" class="badge">检测中</span>
           <span id="bindingBadge" class="badge binding">网页主密码：未绑定</span>
         </div>
+        <button id="openWebAppBtn" class="btn secondary" type="button">打开网页版密码管理器</button>
       </header>
 
 
@@ -46,12 +47,8 @@
             <input id="replaceMode" type="checkbox" />
             <span>导入时覆盖扩展数据</span>
           </label>
-          <label class="checkbox-row">
-            <input id="autoSyncToWeb" type="checkbox" />
-            <span>新增后自动同步到当前网页</span>
-          </label>
           <button id="importBtn" class="btn secondary">从当前网页导入</button>
-          <button id="syncToWebBtn" class="btn secondary">将扩展新增写回网页</button>
+          <button id="syncToWebBtn" class="btn secondary">将新增和删除写回网页</button>
         </div>
 
 

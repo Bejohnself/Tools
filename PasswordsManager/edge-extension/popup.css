@@ -364,6 +364,8 @@ body[data-theme='dark'] .checkbox-row {
   color: #cbd5e1;
 }
 
-
+#openWebAppBtn {
+  margin-top: 1rem;
+}
 
 

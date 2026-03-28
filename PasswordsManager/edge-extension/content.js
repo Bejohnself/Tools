@@ -335,6 +335,7 @@ function ensureQuickPanel() {
   const fillBtn = document.createElement('button');
   const copyUserBtn = document.createElement('button');
   const copyPwdBtn = document.createElement('button');
+  const deleteBtn = document.createElement('button');
 
   title.textContent = '匹配到账号';
   sub.textContent = '';
@@ -347,6 +348,10 @@ function ensureQuickPanel() {
 
   copyPwdBtn.textContent = '复制密码';
   copyPwdBtn.dataset.action = 'copy-password';
+
+  deleteBtn.textContent = '删除该账号';
+  deleteBtn.dataset.action = 'delete-credential';
+
 
   Object.assign(panel.style, {
     position: 'absolute',
@@ -386,7 +391,7 @@ function ensureQuickPanel() {
     marginBottom: '4px'
   });
 
-  for (const btn of [fillBtn, copyUserBtn, copyPwdBtn]) {
+  for (const btn of [fillBtn, copyUserBtn, copyPwdBtn, deleteBtn]) {
     Object.assign(btn.style, {
       display: 'block',
       width: '100%',
@@ -401,12 +406,17 @@ function ensureQuickPanel() {
     });
   }
 
+  deleteBtn.style.background = 'rgba(127, 29, 29, 0.92)';
+
+
   panel.appendChild(title);
   panel.appendChild(sub);
   panel.appendChild(picker);
   panel.appendChild(fillBtn);
   panel.appendChild(copyUserBtn);
   panel.appendChild(copyPwdBtn);
+  panel.appendChild(deleteBtn);
+
 
 
 
@@ -436,8 +446,39 @@ function ensureQuickPanel() {
 
     if (action === 'copy-password') {
       await copyText(credential.password, '密码');
+      return;
+    }
+
+    if (action === 'delete-credential') {
+      const result = await safeRuntimeSendMessage({
+        type: 'DELETE_CREDENTIAL',
+        payload: {
+          id: credential.id,
+          username: credential.username,
+          domain: credential.domain,
+          website: credential.website,
+          url: location.href
+        }
+      });
+
+      if (!result?.ok) {
+        const reason = result?.message || result?.reason || '删除失败';
+        showToast(String(reason), true);
+        return;
+      }
+
+      credentialCache.at = 0;
+      credentialCache.credentials = [];
+      const refreshed = await requestCredentialsForCurrentUrl();
+      if (!refreshed.length) {
+        hideQuickPanel();
+      } else if (activeInput) {
+        showQuickPanel(activeInput, refreshed);
+      }
+      showToast('已删除该账号');
     }
   });
+
 
   picker.addEventListener('change', () => {
     const credential = getSelectedCredential();
@@ -720,29 +761,39 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
     if (message?.type === 'IMPORT_WEBAPP_DATA') {
       const authRaw = message?.payload?.authRaw || '';
-      const passwordsRaw = message?.payload?.passwordsRaw || '';
+      const passwordsRaw = message?.payload?.passwordsRaw || '[]';
+      const deletesRaw = message?.payload?.deletesRaw || '[]';
       const autoReload = Boolean(message?.payload?.autoReload);
       const mode = message?.payload?.mode === 'replace' ? 'replace' : 'merge';
       debugLog('收到写回网页请求', {
         mode,
         autoReload,
         hasAuthRaw: Boolean(authRaw),
-        hasPasswordsRaw: Boolean(passwordsRaw)
+        hasPasswordsRaw: Boolean(passwordsRaw),
+        hasDeletesRaw: Boolean(deletesRaw)
       });
 
-
-      if (!authRaw || !passwordsRaw) {
+      if (!authRaw) {
         sendResponse({ ok: false, message: '缺少待写入数据' });
         return true;
       }
 
       let incoming = [];
+      let incomingDeletes = [];
       try {
-        incoming = JSON.parse(passwordsRaw);
+        incoming = JSON.parse(passwordsRaw || '[]');
       } catch {
         sendResponse({ ok: false, message: '待写入密码数据格式错误' });
         return true;
       }
+
+      try {
+        incomingDeletes = JSON.parse(deletesRaw || '[]');
+      } catch {
+        sendResponse({ ok: false, message: '待删除数据格式错误' });
+        return true;
+      }
+
 
       const currentAuthRaw = localStorage.getItem('master_password_hash') || '';
       if (currentAuthRaw) {
@@ -776,7 +827,36 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       }
 
 
-      let finalList = incoming;
+      const normalizeDeleteDomain = (value) => {
+        if (!value) {
+          return '';
+        }
+        const asUrl = /^https?:\/\//i.test(value) ? value : `https://${value}`;
+        try {
+          const { hostname } = new URL(asUrl);
+          return hostname.replace(/^www\./i, '').toLowerCase();
+        } catch {
+          return String(value || '').trim().toLowerCase();
+        }
+      };
+
+      const shouldDeleteItem = (item) => {
+        return incomingDeletes.some((target) => {
+          const targetId = String(target?.id || '');
+          const itemId = String(item?.id || '');
+          if (targetId && itemId && targetId === itemId) {
+            return true;
+          }
+
+          const targetUsername = String(target?.username || '').trim().toLowerCase();
+          const itemUsername = String(item?.username || '').trim().toLowerCase();
+          const targetDomain = normalizeDeleteDomain(target?.domain || target?.website || '');
+          const itemDomain = normalizeDeleteDomain(item?.domain || item?.website || '');
+          return Boolean(targetUsername && itemUsername && targetDomain && itemDomain && targetUsername === itemUsername && targetDomain === itemDomain);
+        });
+      };
+
+      let finalList = Array.isArray(incoming) ? [...incoming] : [];
 
       if (mode === 'merge') {
         let current = [];
@@ -802,6 +882,11 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         finalList = merged;
       }
 
+      if (incomingDeletes.length > 0) {
+        finalList = finalList.filter((item) => !shouldDeleteItem(item));
+      }
+
+
       localStorage.setItem('master_password_hash', authRaw);
       localStorage.setItem('encrypted_passwords', JSON.stringify(finalList));
 
@@ -811,7 +896,13 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         }, 120);
       }
 
-      sendResponse({ ok: true, reloaded: autoReload, imported: incoming.length, total: finalList.length });
+      sendResponse({
+        ok: true,
+        reloaded: autoReload,
+        imported: incoming.length,
+        deleted: incomingDeletes.length,
+        total: finalList.length
+      });
       return true;
     }
 

@@ -57,6 +57,76 @@ function toUnixMs(value) {
   return Number.isNaN(ts) ? 0 : ts;
 }
 
+function normalizeUsername(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+function resolveCredentialDomain(domain, website) {
+  return normalizeDomainLoose(domain) || normalizeDomainLoose(website) || '';
+}
+
+function isSameCredential(left, right) {
+  const leftId = String(left?.id || '');
+  const rightId = String(right?.id || '');
+  if (leftId && rightId && leftId === rightId) {
+    return true;
+  }
+
+  const leftDomain = resolveCredentialDomain(left?.domain, left?.website);
+  const rightDomain = resolveCredentialDomain(right?.domain, right?.website);
+  const leftUsername = normalizeUsername(left?.username);
+  const rightUsername = normalizeUsername(right?.username);
+
+  return Boolean(leftDomain && rightDomain && leftUsername && rightUsername && leftDomain === rightDomain && leftUsername === rightUsername);
+}
+
+function sanitizePendingDeletes(list) {
+  if (!Array.isArray(list)) {
+    return [];
+  }
+  return list
+    .filter((item) => item && (item.id || item.domain || item.website) && item.username)
+    .map((item) => ({
+      opId: item.opId || crypto.randomUUID(),
+      id: item.id || '',
+      domain: item.domain || '',
+      website: item.website || '',
+      username: String(item.username || '').trim(),
+      deletedAt: item.deletedAt || new Date().toISOString()
+    }));
+}
+
+function removeMatchedPendingDeletes(pendingDeletes, target) {
+  return pendingDeletes.filter((item) => !isSameCredential(item, target));
+}
+
+function applyPendingDeletes(entries, pendingDeletes) {
+  if (!Array.isArray(entries) || !pendingDeletes.length) {
+    return Array.isArray(entries) ? entries : [];
+  }
+  return entries.filter((entry) => !pendingDeletes.some((deleted) => isSameCredential(entry, deleted)));
+}
+
+async function patchMeta(partial) {
+  const currentMeta = await getMeta();
+  const nextMeta = {
+    ...(currentMeta || {}),
+    ...(partial || {})
+  };
+  await setMeta(nextMeta);
+  return nextMeta;
+}
+
+async function clearPendingDeleteForCredential(target) {
+  const meta = await getMeta();
+  const pendingDeletes = sanitizePendingDeletes(meta?.pendingDeletes);
+  const nextPendingDeletes = removeMatchedPendingDeletes(pendingDeletes, target);
+  if (nextPendingDeletes.length !== pendingDeletes.length) {
+    await patchMeta({ pendingDeletes: nextPendingDeletes });
+  }
+}
+
+
 async function decryptLegacyPassword(encryptedPassword, key) {
 
   const ciphertext = new Uint8Array(encryptedPassword.ciphertext);
@@ -148,6 +218,7 @@ async function getStatus() {
   const unlocked = Boolean(await getUnlockedMasterPassword());
   const meta = await getMeta();
   const lastWebImportAt = meta?.lastWebImportAt || null;
+  const pendingDeleteCount = sanitizePendingDeletes(meta?.pendingDeletes).length;
   let count = 0;
   let newSinceImport = 0;
 
@@ -170,9 +241,11 @@ async function getStatus() {
     unlocked,
     count,
     lastWebImportAt,
-    newSinceImport
+    newSinceImport,
+    pendingDeleteCount
   };
 }
+
 
 
 
@@ -352,6 +425,11 @@ async function saveSubmittedCredential(data) {
     });
 
     await encryptAndSaveVault(entries);
+    await clearPendingDeleteForCredential({
+      id: entries[entries.length - 1]?.id,
+      domain,
+      username: data.username
+    });
     return { ok: true, saved: true };
   }
 
@@ -364,9 +442,11 @@ async function saveSubmittedCredential(data) {
         updatedAt: new Date().toISOString()
       };
       await encryptAndSaveVault(entries);
+      await clearPendingDeleteForCredential(entries[existingIndex]);
       return { ok: true, saved: true, updated: true };
     }
   }
+
 
   return { ok: true, saved: false };
 }
@@ -466,7 +546,7 @@ async function initializeFromWebApp(payload) {
 
   inMemoryMasterPassword = masterPassword;
   await setSessionMasterPassword(masterPassword);
-  await setMeta({ lastWebImportAt: new Date().toISOString() });
+  await patchMeta({ lastWebImportAt: new Date().toISOString() });
 
   return { ok: true, count: mappedResult.entries.length };
 }
@@ -485,11 +565,13 @@ async function importFromWebApp(payload) {
   }
 
   const mode = payload?.mode === 'replace' ? 'replace' : 'merge';
-  const importedEntries = mappedResult.entries;
+  const meta = await getMeta();
+  const pendingDeletes = sanitizePendingDeletes(meta?.pendingDeletes);
+  const importedEntries = applyPendingDeletes(mappedResult.entries, pendingDeletes);
 
   if (mode === 'replace') {
     await encryptAndSaveVault(importedEntries);
-    await setMeta({ lastWebImportAt: new Date().toISOString() });
+    await patchMeta({ lastWebImportAt: new Date().toISOString() });
     return { ok: true, mode, replaced: true, added: importedEntries.length, updated: 0 };
   }
 
@@ -525,7 +607,7 @@ async function importFromWebApp(payload) {
     await encryptAndSaveVault(entries);
   }
 
-  await setMeta({ lastWebImportAt: new Date().toISOString() });
+  await patchMeta({ lastWebImportAt: new Date().toISOString() });
   return { ok: true, mode, replaced: false, added, updated };
 }
 
@@ -559,6 +641,7 @@ async function exportNewEntriesToWebApp(payload = {}) {
 
   const meta = await getMeta();
   const lastWebImportAt = meta?.lastWebImportAt || null;
+  const pendingDeletes = sanitizePendingDeletes(meta?.pendingDeletes);
   const baseTs = toUnixMs(lastWebImportAt);
   const newEntries = lastWebImportAt
     ? entries.filter((item) => toUnixMs(item?.createdAt) > baseTs)
@@ -583,23 +666,97 @@ async function exportNewEntriesToWebApp(payload = {}) {
     });
   }
 
-  if (encryptedPasswords.length > 0) {
-    await setMeta({ lastWebImportAt: new Date().toISOString() });
-  }
-
   return {
     ok: true,
     authRaw: webAuthRaw,
     passwordsRaw: JSON.stringify(encryptedPasswords),
+    deletesRaw: JSON.stringify(pendingDeletes),
     count: encryptedPasswords.length,
+    deleteCount: pendingDeletes.length,
+    deleteOpIds: pendingDeletes.map((item) => item.opId),
     fromLastImport: Boolean(lastWebImportAt),
     authSalt: String(webAuth.salt || '')
   };
 }
 
+async function confirmExportToWebApp(payload = {}) {
+  const hadExport = Boolean(payload?.hadExport);
+  const syncedDeleteOpIds = Array.isArray(payload?.syncedDeleteOpIds)
+    ? payload.syncedDeleteOpIds.map((item) => String(item || '')).filter(Boolean)
+    : [];
 
+  const meta = await getMeta();
+  const pendingDeletes = sanitizePendingDeletes(meta?.pendingDeletes);
+  const nextPendingDeletes = syncedDeleteOpIds.length
+    ? pendingDeletes.filter((item) => !syncedDeleteOpIds.includes(item.opId))
+    : pendingDeletes;
+
+  const patch = {
+    pendingDeletes: nextPendingDeletes
+  };
+
+  if (hadExport) {
+    patch.lastWebImportAt = new Date().toISOString();
+  }
+
+  await patchMeta(patch);
+
+  return {
+    ok: true,
+    clearedDeletes: pendingDeletes.length - nextPendingDeletes.length,
+    pendingDeletes: nextPendingDeletes.length
+  };
+}
+
+async function deleteCredential(payload = {}) {
+  const entries = await decryptVault();
+  if (!entries) {
+    return { ok: false, reason: 'LOCKED' };
+  }
+
+  const target = {
+    id: String(payload?.id || ''),
+    domain: payload?.domain || '',
+    website: payload?.website || payload?.url || '',
+    username: String(payload?.username || '').trim()
+  };
+
+  if (!target.id && !(target.username && resolveCredentialDomain(target.domain, target.website))) {
+    return { ok: false, reason: 'INVALID_PAYLOAD' };
+  }
+
+  const index = entries.findIndex((item) => isSameCredential(item, target));
+  if (index === -1) {
+    return { ok: false, reason: 'NOT_FOUND' };
+  }
+
+  const [removed] = entries.splice(index, 1);
+  await encryptAndSaveVault(entries);
+
+  const meta = await getMeta();
+  const pendingDeletes = sanitizePendingDeletes(meta?.pendingDeletes);
+  const nextPendingDeletes = removeMatchedPendingDeletes(pendingDeletes, removed);
+  nextPendingDeletes.push({
+    opId: crypto.randomUUID(),
+    id: removed?.id || '',
+    domain: removed?.domain || '',
+    website: removed?.website || removed?.domain || '',
+    username: String(removed?.username || target.username || '').trim(),
+    deletedAt: new Date().toISOString()
+  });
+
+  await patchMeta({ pendingDeletes: nextPendingDeletes });
+
+  return {
+    ok: true,
+    deleted: true,
+    pendingDeleteCount: nextPendingDeletes.length,
+    remaining: entries.length
+  };
+}
 
 async function addCredentialManual(payload) {
+
 
   const entries = await decryptVault();
   if (!entries) {
@@ -631,10 +788,12 @@ async function addCredentialManual(payload) {
       source: 'ext-manual'
     };
     await encryptAndSaveVault(entries);
+    await clearPendingDeleteForCredential(entries[existingIndex]);
     return { ok: true, added: false, updated: true };
   }
 
   entries.push({
+
     id: crypto.randomUUID(),
     domain,
     website: websiteRaw || domain,
@@ -647,6 +806,11 @@ async function addCredentialManual(payload) {
   });
 
   await encryptAndSaveVault(entries);
+  await clearPendingDeleteForCredential({
+    id: entries[entries.length - 1]?.id,
+    domain,
+    username
+  });
   return { ok: true, added: true, updated: false };
 }
 
@@ -688,12 +852,19 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       case 'ADD_CREDENTIAL':
         sendResponse(await addCredentialManual(message.payload || {}));
         break;
+      case 'DELETE_CREDENTIAL':
+        sendResponse(await deleteCredential(message.payload || {}));
+        break;
       case 'EXPORT_NEW_TO_WEB_APP':
         sendResponse(await exportNewEntriesToWebApp(message.payload || {}));
+        break;
+      case 'CONFIRM_EXPORT_TO_WEB_APP':
+        sendResponse(await confirmExportToWebApp(message.payload || {}));
         break;
       case 'ROTATE_MASTER_FROM_WEB':
         sendResponse(await rotateMasterFromWeb(message.payload || {}));
         break;
+
 
       default:
 
