@@ -93,6 +93,9 @@ const credentialCache = {
 let pendingMasterRotation = null;
 let lastKnownWebAuthRaw = '';
 let syncingMasterRotation = false;
+let pendingLoginMasterPassword = '';
+let syncingWebLogin = false;
+let webLoginAttemptToken = '';
 
 function isContextInvalidatedError(error) {
   const message = String(error?.message || error || '').toLowerCase();
@@ -116,6 +119,19 @@ function isPasswordManagerWebPage() {
       document.getElementById('oldMasterPassword') &&
       document.getElementById('newMasterPassword')
   );
+}
+
+function isPasswordManagerWebApp() {
+  return Boolean(
+    document.getElementById('loginForm') &&
+      document.getElementById('masterPassword') &&
+      document.getElementById('mainPage')
+  );
+}
+
+function isWebAppLoggedIn() {
+  const mainPage = document.getElementById('mainPage');
+  return Boolean(mainPage?.classList?.contains('active'));
 }
 
 function capturePendingMasterRotation() {
@@ -245,6 +261,86 @@ function bindMasterPasswordSync() {
   setInterval(() => {
     void trySyncMasterRotationIfNeeded();
   }, 1000);
+}
+
+async function trySyncLoginFromWebIfNeeded() {
+  if (!isPasswordManagerWebApp() || syncingWebLogin || !pendingLoginMasterPassword) {
+    return;
+  }
+
+  if (!isWebAppLoggedIn()) {
+    return;
+  }
+
+  const authRaw = localStorage.getItem('master_password_hash') || '';
+  const passwordsRaw = localStorage.getItem('encrypted_passwords') || '[]';
+  if (!authRaw) {
+    return;
+  }
+
+  const attemptToken = webLoginAttemptToken;
+  if (!attemptToken) {
+    return;
+  }
+
+  syncingWebLogin = true;
+  try {
+    const result = await safeRuntimeSendMessage({
+      type: 'SYNC_LOGIN_FROM_WEB',
+      payload: {
+        masterPassword: pendingLoginMasterPassword,
+        authRaw,
+        passwordsRaw,
+        sourceUrl: location.href
+      }
+    });
+
+    if (result?.ok && webLoginAttemptToken === attemptToken) {
+      webLoginAttemptToken = '';
+      pendingLoginMasterPassword = '';
+    }
+  } finally {
+    syncingWebLogin = false;
+  }
+}
+
+function bindWebLoginSync() {
+  if (!isPasswordManagerWebApp()) {
+    return;
+  }
+
+  document.addEventListener(
+    'submit',
+    (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLFormElement) || target.id !== 'loginForm') {
+        return;
+      }
+
+      const masterInput = document.getElementById('masterPassword');
+      if (!(masterInput instanceof HTMLInputElement)) {
+        return;
+      }
+
+      pendingLoginMasterPassword = masterInput.value || '';
+      if (!pendingLoginMasterPassword) {
+        return;
+      }
+
+      webLoginAttemptToken = `${Date.now()}-${Math.random()}`;
+
+      setTimeout(() => {
+        void trySyncLoginFromWebIfNeeded();
+      }, 220);
+      setTimeout(() => {
+        void trySyncLoginFromWebIfNeeded();
+      }, 700);
+      setTimeout(() => {
+        void trySyncLoginFromWebIfNeeded();
+      }, 1400);
+    },
+    true
+  );
 }
 
 function showToast(text, isError = false) {
@@ -746,6 +842,7 @@ function init() {
   bindManualFillInteraction();
   bindFormSubmitListener();
   bindMasterPasswordSync();
+  bindWebLoginSync();
 }
 
 

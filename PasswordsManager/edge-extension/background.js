@@ -14,12 +14,25 @@ import {
   setMeta,
   getSessionMasterPassword,
   setSessionMasterPassword,
-  clearSessionMasterPassword
+  clearSessionMasterPassword,
+  getRememberDeviceToken,
+  setRememberDeviceToken,
+  clearRememberDeviceToken,
+  getRememberDevicePreference,
+  setRememberDevicePreference
 } from './storage.js';
+
+import {
+  encryptRememberedMasterPassword,
+  decryptRememberedMasterPassword
+} from './remember-device.js';
+
 
 
 let inMemoryMasterPassword = null;
 const DEBUG_AUTOFILL = true;
+const REMEMBER_DEVICE_DAYS = 7;
+
 
 function debugLog(...args) {
   if (!DEBUG_AUTOFILL) {
@@ -158,17 +171,93 @@ async function encryptLegacyPassword(plainPassword, key) {
 }
 
 
+async function saveRememberDeviceToken(masterPassword, days = REMEMBER_DEVICE_DAYS) {
+  const encrypted = await encryptRememberedMasterPassword(masterPassword);
+  if (!encrypted) {
+    return false;
+  }
+
+  const expiresAt = Date.now() + Math.max(1, Number(days || REMEMBER_DEVICE_DAYS)) * 24 * 60 * 60 * 1000;
+  await setRememberDeviceToken({
+    ...encrypted,
+    expiresAt
+  });
+  return true;
+}
+
+async function loadRememberedMasterIfValid() {
+  const token = await getRememberDeviceToken();
+  if (!token) {
+    return null;
+  }
+
+  const expiresAt = Number(token.expiresAt || 0);
+  if (!expiresAt || Date.now() > expiresAt) {
+    await clearRememberDeviceToken();
+    return null;
+  }
+
+  const candidateMaster = await decryptRememberedMasterPassword(token);
+  if (!candidateMaster) {
+    await clearRememberDeviceToken();
+    return null;
+  }
+
+  const auth = await getAuth();
+  if (!auth?.salt || !auth?.hash) {
+    await clearRememberDeviceToken();
+    return null;
+  }
+
+  const hashedInput = await secureHash(candidateMaster, auth.salt);
+  if (hashedInput !== auth.hash) {
+    await clearRememberDeviceToken();
+    return null;
+  }
+
+  return candidateMaster;
+}
+
+async function getRememberDeviceStatus() {
+  const rememberDevicePreference = await getRememberDevicePreference();
+  const token = await getRememberDeviceToken();
+  if (!token) {
+    return { rememberDevicePreference, rememberDeviceUntil: null };
+  }
+
+  const expiresAt = Number(token.expiresAt || 0);
+  if (!expiresAt || Date.now() > expiresAt) {
+    await clearRememberDeviceToken();
+    return { rememberDevicePreference, rememberDeviceUntil: null };
+  }
+
+  return {
+    rememberDevicePreference,
+    rememberDeviceUntil: new Date(expiresAt).toISOString()
+  };
+}
+
 async function getUnlockedMasterPassword() {
   if (inMemoryMasterPassword) {
     return inMemoryMasterPassword;
   }
+
   const sessionPassword = await getSessionMasterPassword();
   if (sessionPassword) {
     inMemoryMasterPassword = sessionPassword;
     return sessionPassword;
   }
-  return null;
+
+  const rememberedPassword = await loadRememberedMasterIfValid();
+  if (!rememberedPassword) {
+    return null;
+  }
+
+  inMemoryMasterPassword = rememberedPassword;
+  await setSessionMasterPassword(rememberedPassword);
+  return rememberedPassword;
 }
+
 
 async function decryptVault() {
   const auth = await getAuth();
@@ -217,6 +306,7 @@ async function getStatus() {
   const auth = await getAuth();
   const unlocked = Boolean(await getUnlockedMasterPassword());
   const meta = await getMeta();
+  const rememberStatus = await getRememberDeviceStatus();
   const lastWebImportAt = meta?.lastWebImportAt || null;
   const pendingDeleteCount = sanitizePendingDeletes(meta?.pendingDeletes).length;
   let count = 0;
@@ -242,7 +332,9 @@ async function getStatus() {
     count,
     lastWebImportAt,
     newSinceImport,
-    pendingDeleteCount
+    pendingDeleteCount,
+    rememberDevicePreference: rememberStatus.rememberDevicePreference,
+    rememberDeviceUntil: rememberStatus.rememberDeviceUntil
   };
 }
 
@@ -250,13 +342,12 @@ async function getStatus() {
 
 
 
-async function unlock(masterPassword) {
 
+async function unlock(masterPassword, rememberDevice = false) {
   const auth = await getAuth();
   if (!auth) {
     return { ok: false, message: '请先从网页初始化扩展' };
   }
-
 
   const hashedInput = await secureHash(masterPassword, auth.salt);
   if (hashedInput !== auth.hash) {
@@ -265,14 +356,27 @@ async function unlock(masterPassword) {
 
   inMemoryMasterPassword = masterPassword;
   await setSessionMasterPassword(masterPassword);
+  await setRememberDevicePreference(Boolean(rememberDevice));
+
+  if (rememberDevice) {
+    const remembered = await saveRememberDeviceToken(masterPassword, REMEMBER_DEVICE_DAYS);
+    if (!remembered) {
+      return { ok: true, message: '已解锁，但记住设备保存失败' };
+    }
+    return { ok: true };
+  }
+
+  await clearRememberDeviceToken();
   return { ok: true };
 }
 
 async function lock() {
   inMemoryMasterPassword = null;
   await clearSessionMasterPassword();
+  await clearRememberDeviceToken();
   return { ok: true };
 }
+
 
 async function rotateMasterFromWeb(payload) {
   const oldPassword = String(payload?.oldPassword || '');
@@ -326,8 +430,15 @@ async function rotateMasterFromWeb(payload) {
   inMemoryMasterPassword = newPassword;
   await setSessionMasterPassword(newPassword);
 
+  const rememberPreference = await getRememberDevicePreference();
+  await clearRememberDeviceToken();
+  if (rememberPreference) {
+    await saveRememberDeviceToken(newPassword, REMEMBER_DEVICE_DAYS);
+  }
+
   return { ok: true, count: Array.isArray(entries) ? entries.length : 0 };
 }
+
 
 async function getCredentialsForUrl(url) {
 
@@ -549,6 +660,61 @@ async function initializeFromWebApp(payload) {
   await patchMeta({ lastWebImportAt: new Date().toISOString() });
 
   return { ok: true, count: mappedResult.entries.length };
+}
+
+async function syncLoginFromWeb(payload = {}) {
+  const masterPassword = String(payload?.masterPassword || '');
+  const authRaw = String(payload?.authRaw || '');
+  const passwordsRaw = String(payload?.passwordsRaw || '[]');
+  const sourceUrl = String(payload?.sourceUrl || '');
+
+  if (!masterPassword || !authRaw) {
+    return { ok: false, message: '缺少网页登录同步参数' };
+  }
+
+  const auth = await getAuth();
+  if (!auth) {
+    const initResult = await initializeFromWebApp({
+      masterPassword,
+      authRaw,
+      passwordsRaw,
+      sourceUrl
+    });
+    if (!initResult?.ok) {
+      return initResult;
+    }
+    return {
+      ok: true,
+      initialized: true,
+      unlocked: true,
+      count: Number(initResult.count || 0)
+    };
+  }
+
+  let webAuth;
+  try {
+    webAuth = JSON.parse(authRaw);
+  } catch {
+    return { ok: false, message: '网页认证信息格式错误' };
+  }
+
+  if (!webAuth?.salt || !webAuth?.hash) {
+    return { ok: false, message: '网页认证信息不完整' };
+  }
+
+  if (auth.salt !== webAuth.salt || auth.hash !== webAuth.hash) {
+    return { ok: false, message: '网页与扩展主密码不一致，请先在扩展中手动解锁/初始化' };
+  }
+
+  const hashedInput = await secureHash(masterPassword, auth.salt);
+  if (hashedInput !== auth.hash) {
+    return { ok: false, message: '网页登录密码校验失败，未同步解锁扩展' };
+  }
+
+  inMemoryMasterPassword = masterPassword;
+  await setSessionMasterPassword(masterPassword);
+
+  return { ok: true, initialized: false, unlocked: true };
 }
 
 async function importFromWebApp(payload) {
@@ -826,13 +992,18 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         sendResponse(await getStatus());
         break;
       case 'UNLOCK':
-
-        sendResponse(await unlock(message.masterPassword || ''));
+        sendResponse(await unlock(message.masterPassword || '', Boolean(message.rememberDevice)));
         break;
+
       case 'LOCK':
         sendResponse(await lock());
         break;
+      case 'SET_REMEMBER_DEVICE_PREFERENCE':
+        await setRememberDevicePreference(Boolean(message.enabled));
+        sendResponse({ ok: true });
+        break;
       case 'GET_CREDENTIALS_FOR_URL':
+
         sendResponse(await getCredentialsForUrl(message.url || ''));
         break;
       case 'CREDENTIAL_USED':
@@ -844,6 +1015,9 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         break;
       case 'INIT_FROM_WEB_APP':
         sendResponse(await initializeFromWebApp(message.payload || {}));
+        break;
+      case 'SYNC_LOGIN_FROM_WEB':
+        sendResponse(await syncLoginFromWeb(message.payload || {}));
         break;
       case 'IMPORT_FROM_WEB_APP':
         sendResponse(await importFromWebApp(message.payload || {}));

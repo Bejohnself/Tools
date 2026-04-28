@@ -8,6 +8,7 @@ const statusBadgeEl = document.getElementById('statusBadge');
 const bindingBadgeEl = document.getElementById('bindingBadge');
 const themeToggleBtn = document.getElementById('themeToggleBtn');
 const openWebAppBtn = document.getElementById('openWebAppBtn');
+const rememberDeviceEl = document.getElementById('rememberDevice');
 
 const POPUP_THEME_KEY = 'pm_ext_popup_theme';
 const WEB_APP_URL = 'https://bejohnself.github.io/Tools/PasswordsManager/';
@@ -302,6 +303,9 @@ async function refreshStatus() {
     showPanel(unlockPanel);
     setStatusBadge('已锁定', 'danger');
     setBindingBadge(true);
+    if (rememberDeviceEl) {
+      rememberDeviceEl.checked = Boolean(status.rememberDevicePreference);
+    }
     setMessage('扩展已锁定');
     return;
   }
@@ -379,7 +383,11 @@ document.getElementById('unlockBtn').addEventListener('click', async () => {
     return;
   }
 
-  const result = await sendMessage({ type: 'UNLOCK', masterPassword: pwd });
+  const result = await sendMessage({
+    type: 'UNLOCK',
+    masterPassword: pwd,
+    rememberDevice: Boolean(rememberDeviceEl?.checked)
+  });
   if (!result.ok) {
     setMessage(result.message || '解锁失败', true);
     return;
@@ -520,12 +528,76 @@ if (openWebAppBtn) {
     await chrome.tabs.create({ url: WEB_APP_URL });
   });
 }
-
+if (rememberDeviceEl) {
+  // 持久化“记住设备”勾选偏好，便于下次打开弹窗沿用用户选择。
+  rememberDeviceEl.addEventListener('change', async () => {
+    await sendMessage({
+      type: 'SET_REMEMBER_DEVICE_PREFERENCE',
+      enabled: Boolean(rememberDeviceEl.checked)
+    });
+  });
+}
 
 const addAutoTimestampEl = document.getElementById('addAutoTimestamp');
 
+
 if (addAutoTimestampEl) {
   addAutoTimestampEl.checked = localStorage.getItem('pm_ext_auto_timestamp') === 'true';
+}
+
+const setupPasswordEl = document.getElementById('setupPassword');
+if (setupPasswordEl) {
+  setupPasswordEl.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter') {
+      return;
+    }
+    event.preventDefault();
+    document.getElementById('setupBtn')?.click();
+  });
+}
+
+const unlockPasswordEl = document.getElementById('unlockPassword');
+if (unlockPasswordEl) {
+  unlockPasswordEl.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter') {
+      return;
+    }
+    event.preventDefault();
+    document.getElementById('unlockBtn')?.click();
+  });
+}
+
+const addUsernameEl = document.getElementById('addUsername');
+if (addUsernameEl) {
+  addUsernameEl.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter') {
+      return;
+    }
+    event.preventDefault();
+    document.getElementById('addBtn')?.click();
+  });
+}
+
+const addPasswordEl = document.getElementById('addPassword');
+if (addPasswordEl) {
+  addPasswordEl.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter') {
+      return;
+    }
+    event.preventDefault();
+    document.getElementById('addBtn')?.click();
+  });
+}
+
+const addNotesEl = document.getElementById('addNotes');
+if (addNotesEl) {
+  addNotesEl.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter') {
+      return;
+    }
+    event.preventDefault();
+    document.getElementById('addBtn')?.click();
+  });
 }
 
 initTheme();

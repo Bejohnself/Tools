@@ -2,6 +2,8 @@ export const AUTH_KEY = 'pm_ext_auth';
 export const VAULT_KEY = 'pm_ext_vault';
 export const META_KEY = 'pm_ext_meta';
 export const SESSION_MASTER_KEY = 'pm_ext_session_master';
+export const REMEMBER_DEVICE_TOKEN_KEY = 'pm_ext_remember_device_token';
+export const REMEMBER_DEVICE_PREFERENCE_KEY = 'pm_ext_remember_device_preference';
 
 
 export async function getAuth() {
@@ -53,3 +55,26 @@ export async function clearSessionMasterPassword() {
   }
   await chrome.storage.session.remove(SESSION_MASTER_KEY);
 }
+
+export async function getRememberDeviceToken() {
+  const data = await chrome.storage.local.get(REMEMBER_DEVICE_TOKEN_KEY);
+  return data[REMEMBER_DEVICE_TOKEN_KEY] || null;
+}
+
+export async function setRememberDeviceToken(tokenPayload) {
+  await chrome.storage.local.set({ [REMEMBER_DEVICE_TOKEN_KEY]: tokenPayload || null });
+}
+
+export async function clearRememberDeviceToken() {
+  await chrome.storage.local.remove(REMEMBER_DEVICE_TOKEN_KEY);
+}
+
+export async function getRememberDevicePreference() {
+  const data = await chrome.storage.local.get(REMEMBER_DEVICE_PREFERENCE_KEY);
+  return Boolean(data[REMEMBER_DEVICE_PREFERENCE_KEY]);
+}
+
+export async function setRememberDevicePreference(enabled) {
+  await chrome.storage.local.set({ [REMEMBER_DEVICE_PREFERENCE_KEY]: Boolean(enabled) });
+}
+
