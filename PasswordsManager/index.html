@@ -6,8 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>密码管理器</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="all.min.css">
-
     <!-- 依赖库 - 使用 defer 异步加载 -->
     <script src="papaparse.min.js" defer></script>
     <script src="marked.min.js" defer></script>
@@ -25,6 +23,40 @@
 </head>
 
 <body>
+    <svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true" focusable="false">
+        <symbol id="icon-lock" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></symbol>
+        <symbol id="icon-key" viewBox="0 0 24 24"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></symbol>
+        <symbol id="icon-eye" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></symbol>
+        <symbol id="icon-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></symbol>
+        <symbol id="icon-refreshCw" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></symbol>
+        <symbol id="icon-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></symbol>
+        <symbol id="icon-help" viewBox="0 0 24 24"><path d="M9 18h6"></path><path d="M10 22h4"></path><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5.76.76 1.23 1.52 1.41 2.5"></path></symbol>
+        <symbol id="icon-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></symbol>
+        <symbol id="icon-trendingUp" viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></symbol>
+        <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></symbol>
+        <symbol id="icon-plus" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></symbol>
+        <symbol id="icon-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></symbol>
+        <symbol id="icon-list" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></symbol>
+        <symbol id="icon-trash" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></symbol>
+        <symbol id="icon-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></symbol>
+        <symbol id="icon-user" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></symbol>
+        <symbol id="icon-fileText" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></symbol>
+        <symbol id="icon-edit" viewBox="0 0 24 24"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></symbol>
+        <symbol id="icon-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></symbol>
+        <symbol id="icon-sparkles" viewBox="0 0 24 24"><path d="M12 3l1.9 5.8a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3z"></path><path d="M18 4l.6 1.8L20.4 6.4l-1.8.6L18 8.8l-.6-1.8-1.8-.6 1.8-.6z"></path></symbol>
+        <symbol id="icon-save" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></symbol>
+        <symbol id="icon-folder" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></symbol>
+        <symbol id="icon-tool" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></symbol>
+        <symbol id="icon-x" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></symbol>
+        <symbol id="icon-keyboard" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"></rect><line x1="6" y1="10" x2="6" y2="10.01"></line><line x1="10" y1="10" x2="10" y2="10.01"></line><line x1="14" y1="10" x2="14" y2="10.01"></line><line x1="18" y1="10" x2="18" y2="10.01"></line><line x1="8" y1="14" x2="8" y2="14.01"></line><line x1="12" y1="14" x2="12" y2="14.01"></line><line x1="16" y1="14" x2="16" y2="14.01"></line><line x1="6" y1="18" x2="18" y2="18"></line></symbol>
+        <symbol id="icon-refreshCcw" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></symbol>
+        <symbol id="icon-cloud" viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></symbol>
+        <symbol id="icon-wifi" viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0"></path><path d="M1.42 9a16 16 0 0 1 21.16 0"></path><path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path><line x1="12" y1="20" x2="12.01" y2="20"></line></symbol>
+        <symbol id="icon-book" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></symbol>
+        <symbol id="icon-eyeOff" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"></path><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"></path><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></symbol>
+        <symbol id="icon-check" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"></path></symbol>
+        <symbol id="icon-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></symbol>
+    </svg>
     <header>
     </header>
     <!-- 主题选择器 -->
@@ -50,7 +82,7 @@
         <div class="login-container glass-card">
             <div class="login-header">
                 <div class="logo">
-                    🔐
+                    <svg class="icon" width="64" height="64" aria-hidden="true"><use href="#icon-lock"></use></svg>
                 </div>
                 <h1>Be的密码管理器</h1>
                 <p class="subtitle">安全、便捷的本地密码管理</p>
@@ -59,27 +91,31 @@
             <form id="loginForm" class="login-form">
                 <div class="input-group">
                     <label for="masterPassword">
-                        🔑 主密码
+                        <svg class="icon" width="16" height="16" aria-hidden="true"><use href="#icon-key"></use></svg>
+                        主密码
                     </label>
                     <div class="password-input">
                         <input type="password" id="masterPassword" placeholder="哥们暗语" required>
                         <button type="button" class="toggle-password"
                             onclick="togglePasswordVisibilityInput('masterPassword')">
-                            👁️
+                            <svg class="icon" width="18" height="18" aria-hidden="true"><use href="#icon-eye"></use></svg>
                         </button>
                     </div>
                 </div>
 
                 <button type="submit" class="login-btn">
-                    🔐 安全登录
+                    <svg class="icon" width="18" height="18" aria-hidden="true"><use href="#icon-lock"></use></svg>
+                    安全登录
                 </button>
 
                 <div class="security-tips">
                     <div class="tip-item">
-                        🛡️ 所有数据本地加密存储
+                        <svg class="icon" width="16" height="16" aria-hidden="true"><use href="#icon-shield"></use></svg>
+                        所有数据本地加密存储
                     </div>
                     <div class="tip-item">
-                        🔄 支持数据备份与恢复
+                        <svg class="icon" width="16" height="16" aria-hidden="true"><use href="#icon-refreshCw"></use></svg>
+                        支持数据备份与恢复
                     </div>
                 </div>
 
@@ -95,19 +131,23 @@
         <div class="dashboard-container">
             <div class="dashboard-header">
                 <div class="header-content">
-                    <h1>🔐 Be的密码管理中心</h1>
+                    <h1>
+                        <svg class="icon" width="26" height="26" aria-hidden="true"><use href="#icon-lock"></use></svg>
+                        Be的密码管理中心
+                    </h1>
                     <div class="user-actions">
                         <button class="action-btn" onclick="showSettings()" title="设置">
-                            ⚙️
+                            <svg class="icon" width="18" height="18" aria-hidden="true"><use href="#icon-settings"></use></svg>
                         </button>
                         <button class="action-btn" onclick="showView('sync')" title="云同步">
-                            🔄
+                            <svg class="icon" width="18" height="18" aria-hidden="true"><use href="#icon-refreshCw"></use></svg>
                         </button>
                         <button class="action-btn" onclick="toggleShortcutHelp()" title="快捷键说明">
-                            💡
+                            <svg class="icon" width="18" height="18" aria-hidden="true"><use href="#icon-help"></use></svg>
                         </button>
                         <button class="logout-btn" onclick="logout()" title="退出">
-                            🚪 退出
+                            <svg class="icon" width="16" height="16" aria-hidden="true"><use href="#icon-logout"></use></svg>
+                            退出
                         </button>
                     </div>
                 </div>
@@ -115,7 +155,7 @@
                 <div class="stats-cards">
                     <div class="stat-card">
                         <div class="stat-icon">
-                            🔑
+                            <svg class="icon" width="28" height="28" aria-hidden="true"><use href="#icon-key"></use></svg>
                         </div>
                         <div class="stat-content">
                             <div class="stat-number" id="totalPasswords">0</div>
@@ -125,7 +165,7 @@
 
                     <div class="stat-card">
                         <div class="stat-icon">
-                            📈
+                            <svg class="icon" width="28" height="28" aria-hidden="true"><use href="#icon-trendingUp"></use></svg>
                         </div>
                         <div class="stat-content">
                             <div class="stat-number" id="repetitiveRate">0</div>
@@ -139,7 +179,7 @@
                 <div class="menu-grid">
                     <div class="menu-card" onclick="showView('query')">
                         <div class="card-icon primary">
-                            🔍
+                            <svg class="icon" width="34" height="34" aria-hidden="true"><use href="#icon-search"></use></svg>
                         </div>
                         <div class="card-content">
                             <h2>查询密码</h2>
@@ -153,7 +193,7 @@
 
                     <div class="menu-card" onclick="showView('add')">
                         <div class="card-icon success">
-                            ➕
+                            <svg class="icon" width="34" height="34" aria-hidden="true"><use href="#icon-plus"></use></svg>
                         </div>
                         <div class="card-content">
                             <h2>添加密码</h2>
@@ -167,7 +207,7 @@
 
                     <div class="menu-card" onclick="showView('export')">
                         <div class="card-icon warning">
-                            📤
+                            <svg class="icon" width="34" height="34" aria-hidden="true"><use href="#icon-download"></use></svg>
                         </div>
                         <div class="card-content">
                             <h2>导出数据</h2>
@@ -190,20 +230,25 @@
                 <button class="back-btn" onclick="showMainPage()">
                     ← 返回
                 </button>
-                <h2>🔍 密码查询</h2>
+                <h2>
+                    <svg class="icon" width="24" height="24" aria-hidden="true"><use href="#icon-search"></use></svg>
+                    密码查询
+                </h2>
             </div>
 
             <div class="search-section">
                 <div class="search-box">
                     <input type="text" id="searchInput" placeholder="搜索网站名称或用户名...">
                     <button onclick="searchPasswords()">
-                        🔍 搜索
+                        <svg class="icon" width="16" height="16" aria-hidden="true"><use href="#icon-search"></use></svg>
+                        搜索
                     </button>
                 </div>
 
                 <div class="filter-options">
                     <button class="filter-btn active" data-filter="all">
-                        📋 全部
+                        <svg class="icon" width="16" height="16" aria-hidden="true"><use href="#icon-list"></use></svg>
+                        全部
                     </button>
                     <!-- <button class="filter-btn" data-filter="recent">
                         🕐 最近
@@ -216,11 +261,12 @@
                     <span id="resultsCount">0</span> 条结果
                     <div class="results-actions">
                         <button class="action-btn small" onclick="refreshResults()">
-                            🔄
+                            <svg class="icon" width="16" height="16" aria-hidden="true"><use href="#icon-refreshCw"></use></svg>
                         </button>
                         <!-- 新增删除全部按钮 -->
                         <button class="action-btn small btn-danger" onclick="deleteAllPasswords()">
-                            🗑️ 全部删除
+                            <svg class="icon" width="15" height="15" aria-hidden="true"><use href="#icon-trash"></use></svg>
+                            全部删除
                         </button>
                     </div>
                 </div>
@@ -229,17 +275,32 @@
                     <table id="passwordTable">
                         <thead>
                             <tr>
-                                <th>🌐 网站</th>
-                                <th>👤 用户名</th>
-                                <th>🔒 密码</th>
-                                <th>📝 备注</th>
-                                <th>⚙️ 操作</th>
+                                <th>
+                                    <svg class="icon" width="15" height="15" aria-hidden="true"><use href="#icon-globe"></use></svg>
+                                    网站
+                                </th>
+                                <th>
+                                    <svg class="icon" width="15" height="15" aria-hidden="true"><use href="#icon-user"></use></svg>
+                                    用户名
+                                </th>
+                                <th>
+                                    <svg class="icon" width="15" height="15" aria-hidden="true"><use href="#icon-lock"></use></svg>
+                                    密码
+                                </th>
+                                <th>
+                                    <svg class="icon" width="15" height="15" aria-hidden="true"><use href="#icon-fileText"></use></svg>
+                                    备注
+                                </th>
+                                <th>
+                                    <svg class="icon" width="15" height="15" aria-hidden="true"><use href="#icon-settings"></use></svg>
+                                    操作
+                                </th>
                             </tr>
                         </thead>
                         <tbody id="passwordList">
                             <tr>
                                 <td colspan="5" class="empty-state">
-                                    🔍
+                                    <svg class="icon" width="56" height="56" aria-hidden="true"><use href="#icon-search"></use></svg>
                                     <p>请输入搜索关键词开始查询</p>
                                 </td>
                             </tr>
@@ -257,16 +318,21 @@
                 <button class="back-btn" onclick="showMainPage()">
                     ← 返回
                 </button>
-                <h2>➕ 添加密码</h2>
+                <h2>
+                    <svg class="icon" width="24" height="24" aria-hidden="true"><use href="#icon-plus"></use></svg>
+                    添加密码
+                </h2>
             </div>
 
             <div class="tab-container">
                 <div class="tab-header">
                     <button class="tab-btn active" onclick="switchTab('single')">
-                        ✏️ 单条添加
+                        <svg class="icon" width="16" height="16" aria-hidden="true"><use href="#icon-edit"></use></svg>
+                        单条添加
                     </button>
                     <button class="tab-btn" onclick="switchTab('batch')">
-                        📥 批量导入
+                        <svg class="icon" width="16" height="16" aria-hidden="true"><use href="#icon-upload"></use></svg>
+                        批量导入
                     </button>
                 </div>
 
@@ -278,14 +344,16 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="addWebsite">
-                                    🌐 网站名称 *
+                                    <svg class="icon" width="15" height="15" aria-hidden="true"><use href="#icon-globe"></use></svg>
+                                    网站名称 *
                                 </label>
                                 <input type="text" id="addWebsite" placeholder="例如：github.com" required>
                             </div>
 
                             <div class="form-group">
                                 <label for="addUsername">
-                                    👤 用户名 *
+                                    <svg class="icon" width="15" height="15" aria-hidden="true"><use href="#icon-user"></use></svg>
+                                    用户名 *
                                 </label>
                                 <input type="text" id="addUsername" placeholder="您的用户名" required>
                             </div>
@@ -294,22 +362,26 @@
                         <div class="password-notes-row">
                             <div class="form-group password-group">
                                 <label for="addPassword">
-                                    🔒 密码 *
+                                    <svg class="icon" width="15" height="15" aria-hidden="true"><use href="#icon-lock"></use></svg>
+                                    密码 *
                                 </label>
                                 <div class="password-input">
                                     <input type="password" id="addPassword" placeholder="输入密码" required>
                                     <button type="button" class="toggle-password"
                                         onclick="togglePasswordVisibilityInput('addPassword')">
-                                        👁️
+                                        <svg class="icon" width="18" height="18" aria-hidden="true"><use href="#icon-eye"></use></svg>
                                     </button>
                                     <button type="button" class="generate-password" onclick="generatePassword()">
-                                        ✨
+                                        <svg class="icon" width="18" height="18" aria-hidden="true"><use href="#icon-sparkles"></use></svg>
                                     </button>
                                 </div>
                             </div>
                             <div class="form-group notes-group">
                                 <div class="notes-header">
-                                    <label for="addNotes">📝 备注</label>
+                                    <label for="addNotes">
+                                        <svg class="icon" width="15" height="15" aria-hidden="true"><use href="#icon-fileText"></use></svg>
+                                        备注
+                                    </label>
                                     <div class="checkbox-wrapper">
                                         <input type="checkbox" id="addAutoTimestamp">
                                         <label for="addAutoTimestamp" class="checkbox-label">自动添加时间戳</label>
@@ -321,7 +393,8 @@
 
                         <div class="form-actions">
                             <button type="submit" id="saveBtn" class="primary-btn">
-                                💾 添加密码
+                                <svg class="icon" width="16" height="16" aria-hidden="true"><use href="#icon-save"></use></svg>
+                                添加密码
                             </button>
                         </div>
                     </form>
@@ -331,7 +404,10 @@
                 <div class="tab-content" id="batchTab" style="display: none;">
                     <div class="batch-import">
                         <div class="import-header">
-                            <h3>📥 批量导入密码</h3>
+                            <h3>
+                                <svg class="icon" width="18" height="18" aria-hidden="true"><use href="#icon-upload"></use></svg>
+                                批量导入密码
+                            </h3>
                             <p>支持JSON格式文件导入</p>
                         </div>
 
@@ -370,7 +446,8 @@ website,username,password,notes
                                 <!-- 按钮移动到操作步骤列表的正下方 -->
                                 <div class="import-actions" style="margin-bottom: 15px; text-align: center;">
                                     <button class="primary-btn" onclick="document.getElementById('importFile').click()">
-                                        📁 选择文件
+                                        <svg class="icon" width="16" height="16" aria-hidden="true"><use href="#icon-folder"></use></svg>
+                                        选择文件
                                     </button>
                                     <input type="file" id="importFile" accept=".json,.csv" style="display: none;"
                                         onchange="importData(event)">
@@ -392,14 +469,17 @@ website,username,password,notes
                 <button class="back-btn" onclick="showMainPage()">
                     ← 返回
                 </button>
-                <h2>📤 数据导出</h2>
+                <h2>
+                    <svg class="icon" width="24" height="24" aria-hidden="true"><use href="#icon-download"></use></svg>
+                    数据导出
+                </h2>
             </div>
 
             <div class="export-options">
                 <div class="export-grid">
                     <div class="export-card" onclick="exportAllData()">
                         <div class="card-icon large success">
-                            💾
+                            <svg class="icon" width="38" height="38" aria-hidden="true"><use href="#icon-save"></use></svg>
                         </div>
                         <div class="card-content">
                             <h3>导出所有数据</h3>
@@ -413,7 +493,7 @@ website,username,password,notes
 
                     <div class="export-card" onclick="exportFilteredData()">
                         <div class="card-icon large warning">
-                            🔍
+                            <svg class="icon" width="38" height="38" aria-hidden="true"><use href="#icon-search"></use></svg>
                         </div>
                         <div class="card-content">
                             <h3>导出搜索结果</h3>
@@ -427,7 +507,7 @@ website,username,password,notes
 
                     <div class="export-card" onclick="showExportSearch()">
                         <div class="card-icon large info">
-                            ⚙️
+                            <svg class="icon" width="38" height="38" aria-hidden="true"><use href="#icon-settings"></use></svg>
                         </div>
                         <div class="card-content">
                             <h3>按条件导出</h3>
@@ -444,7 +524,8 @@ website,username,password,notes
                     <div class="search-box">
                         <input type="text" id="exportSearch" placeholder="输入搜索关键词...">
                         <button onclick="exportBySearch()">
-                            📤 导出匹配数据
+                            <svg class="icon" width="16" height="16" aria-hidden="true"><use href="#icon-download"></use></svg>
+                            导出匹配数据
                         </button>
                     </div>
                 </div>
@@ -459,13 +540,17 @@ website,username,password,notes
                 <button class="back-btn" onclick="showMainPage()">
                     ← 返回
                 </button>
-                <h2>🔧 修改密码</h2>
+                <h2>
+                    <svg class="icon" width="24" height="24" aria-hidden="true"><use href="#icon-tool"></use></svg>
+                    修改密码
+                </h2>
             </div>
 
             <div class="tab-container">
                 <div class="tab-header">
                     <button class="tab-btn active" onclick="switchTab('single')">
-                        ✏️ 单条修改
+                        <svg class="icon" width="16" height="16" aria-hidden="true"><use href="#icon-edit"></use></svg>
+                        单条修改
                     </button>
                 </div>
 
@@ -477,14 +562,16 @@ website,username,password,notes
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="modWebsite">
-                                    🌐 网站名称 *
+                                    <svg class="icon" width="15" height="15" aria-hidden="true"><use href="#icon-globe"></use></svg>
+                                    网站名称 *
                                 </label>
                                 <input type="text" id="modWebsite" placeholder="例如：github.com" required>
                             </div>
 
                             <div class="form-group">
                                 <label for="modUsername">
-                                    👤 用户名 *
+                                    <svg class="icon" width="15" height="15" aria-hidden="true"><use href="#icon-user"></use></svg>
+                                    用户名 *
                                 </label>
                                 <input type="text" id="modUsername" placeholder="您的用户名" required>
                             </div>
@@ -493,22 +580,26 @@ website,username,password,notes
                         <div class="password-notes-row">
                             <div class="form-group password-group">
                                 <label for="modPassword">
-                                    🔒 密码 *
+                                    <svg class="icon" width="15" height="15" aria-hidden="true"><use href="#icon-lock"></use></svg>
+                                    密码 *
                                 </label>
                                 <div class="password-input">
                                     <input type="password" id="modPassword" placeholder="输入密码" required>
                                     <button type="button" class="toggle-password"
                                         onclick="togglePasswordVisibilityInput('modPassword')">
-                                        👁️
+                                        <svg class="icon" width="18" height="18" aria-hidden="true"><use href="#icon-eye"></use></svg>
                                     </button>
                                     <button type="button" class="generate-password" onclick="generatePassword('mod')">
-                                        ✨
+                                        <svg class="icon" width="18" height="18" aria-hidden="true"><use href="#icon-sparkles"></use></svg>
                                     </button>
                                 </div>
                             </div>
                             <div class="form-group notes-group">
                                 <div class="notes-header">
-                                    <label for="modNotes">📝 备注</label>
+                                    <label for="modNotes">
+                                        <svg class="icon" width="15" height="15" aria-hidden="true"><use href="#icon-fileText"></use></svg>
+                                        备注
+                                    </label>
                                     <div class="checkbox-wrapper">
                                         <input type="checkbox" id="modAutoTimestamp">
                                         <label for="modAutoTimestamp" class="checkbox-label">自动添加时间戳</label>
@@ -520,10 +611,12 @@ website,username,password,notes
 
                         <div class="form-actions">
                             <button type="button" id="modCancelBtn" class="secondary-btn" style="display: block;">
-                                ❌ 取消
+                                <svg class="icon" width="16" height="16" aria-hidden="true"><use href="#icon-x"></use></svg>
+                                取消
                             </button>
                             <button type="submit" id="modifyBtn" class="primary-btn">
-                                💾 更新密码
+                                <svg class="icon" width="16" height="16" aria-hidden="true"><use href="#icon-save"></use></svg>
+                                更新密码
                             </button>
                         </div>
                     </form>
@@ -537,51 +630,69 @@ website,username,password,notes
         <div class="content-container glass-card">
             <div class="page-header">
                 <button class="back-btn" onclick="showMainPage()">← 返回</button>
-                <h2>⚙️ 账户设置</h2>
+                <h2>
+                    <svg class="icon" width="24" height="24" aria-hidden="true"><use href="#icon-settings"></use></svg>
+                    账户设置
+                </h2>
             </div>
 
             <form id="changeMasterPasswordForm" class="settings-form">
-                <h3>🔐 修改主密码</h3>
+                <h3>
+                    <svg class="icon" width="18" height="18" aria-hidden="true"><use href="#icon-lock"></use></svg>
+                    修改主密码
+                </h3>
                 <p style="margin-top: 0; margin-bottom: 20px; color: var(--text-secondary);">通过修改主密码来增强账户安全性</p>
 
                 <!-- 旧主密码输入 -->
                 <div class="input-group">
-                    <label for="oldMasterPassword" aria-label="旧主密码">🔑 旧主密码 *</label>
+                    <label for="oldMasterPassword" aria-label="旧主密码">
+                        <svg class="icon" width="15" height="15" aria-hidden="true"><use href="#icon-key"></use></svg>
+                        旧主密码 *
+                    </label>
                     <div class="password-input">
                         <input type="password" id="oldMasterPassword" placeholder="请输入当前主密码" required>
                         <button type="button" class="toggle-password"
                             onclick="togglePasswordVisibilityInput('oldMasterPassword')" aria-label="切换密码可见性">
-                            👁️
+                            <svg class="icon" width="18" height="18" aria-hidden="true"><use href="#icon-eye"></use></svg>
                         </button>
                     </div>
                 </div>
 
                 <!-- 新主密码输入 -->
                 <div class="input-group">
-                    <label for="newMasterPassword" aria-label="新主密码">🔑 新主密码 *</label>
+                    <label for="newMasterPassword" aria-label="新主密码">
+                        <svg class="icon" width="15" height="15" aria-hidden="true"><use href="#icon-key"></use></svg>
+                        新主密码 *
+                    </label>
                     <div class="password-input">
                         <input type="password" id="newMasterPassword" placeholder="请输入新主密码（至少6位）" required>
                         <button type="button" class="toggle-password"
                             onclick="togglePasswordVisibilityInput('newMasterPassword')" aria-label="切换密码可见性">
-                            👁️
+                            <svg class="icon" width="18" height="18" aria-hidden="true"><use href="#icon-eye"></use></svg>
                         </button>
                     </div>
                 </div>
 
                 <!-- 确认新主密码输入 -->
                 <div class="input-group">
-                    <label for="confirmMasterPassword" aria-label="确认新主密码">🔑 确认新主密码 *</label>
+                    <label for="confirmMasterPassword" aria-label="确认新主密码">
+                        <svg class="icon" width="15" height="15" aria-hidden="true"><use href="#icon-key"></use></svg>
+                        确认新主密码 *
+                    </label>
                     <div class="password-input">
                         <input type="password" id="confirmMasterPassword" placeholder="请再次输入新主密码" required>
                         <button type="button" class="toggle-password"
                             onclick="togglePasswordVisibilityInput('confirmMasterPassword')" aria-label="切换密码可见性">
-                            👁️
+                            <svg class="icon" width="18" height="18" aria-hidden="true"><use href="#icon-eye"></use></svg>
                         </button>
                     </div>
                 </div>
 
                 <div class="form-actions">
-                    <button type="button" class="primary-btn" onclick="handleChangeMasterPassword()">💾 修改主密码</button>
+                    <button type="button" class="primary-btn" onclick="handleChangeMasterPassword()">
+                        <svg class="icon" width="16" height="16" aria-hidden="true"><use href="#icon-save"></use></svg>
+                        修改主密码
+                    </button>
                 </div>
                 <div class="error-message" id="changePasswordError"
                     style="display: none; color: #e63946; margin-top: 15px;"></div>
@@ -589,7 +700,10 @@ website,username,password,notes
 
             <!-- 自定义快捷键设置 -->
             <div class="settings-section">
-                <h3>⌨️ 自定义快捷键</h3>
+                <h3>
+                    <svg class="icon" width="18" height="18" aria-hidden="true"><use href="#icon-keyboard"></use></svg>
+                    自定义快捷键
+                </h3>
                 <p style="margin-top: 0; margin-bottom: 20px; color: var(--text-secondary);">自定义键盘快捷键以提高操作效率</p>
                 <div class="form-group">
                     <label for="queryKey">查询页面快捷键</label>
@@ -612,8 +726,14 @@ website,username,password,notes
                     <input type="text" id="exitInputKey" class="key-input" maxlength="1" placeholder="按任意键设置">
                 </div>
                 <div class="form-actions">
-                    <button type="button" class="secondary-btn" onclick="resetDefaultKeys()">↩ 恢复默认</button>
-                    <button type="button" class="primary-btn" onclick="saveCustomKeys()">💾 保存快捷键</button>
+                    <button type="button" class="secondary-btn" onclick="resetDefaultKeys()">
+                        <svg class="icon" width="16" height="16" aria-hidden="true"><use href="#icon-refreshCcw"></use></svg>
+                        恢复默认
+                    </button>
+                    <button type="button" class="primary-btn" onclick="saveCustomKeys()">
+                        <svg class="icon" width="16" height="16" aria-hidden="true"><use href="#icon-save"></use></svg>
+                        保存快捷键
+                    </button>
                 </div>
             </div>
         </div>
@@ -623,7 +743,10 @@ website,username,password,notes
     <div id="shortcutHelpModal" class="modal" style="display: none;">
         <div class="modal-content glass-card">
             <div class="modal-header">
-                <h2>⌨️ 快捷键说明</h2>
+                <h2>
+                    <svg class="icon" width="22" height="22" aria-hidden="true"><use href="#icon-keyboard"></use></svg>
+                    快捷键说明
+                </h2>
                 <button class="close-btn" onclick="toggleShortcutHelp()">&times;</button>
             </div>
             <div class="modal-body">
@@ -666,39 +789,56 @@ website,username,password,notes
                 <button class="back-btn" onclick="showMainPage()">
                     ← 返回
                 </button>
-                <h2>🔄 云同步设置</h2>
+                <h2>
+                    <svg class="icon" width="24" height="24" aria-hidden="true"><use href="#icon-refreshCw"></use></svg>
+                    云同步设置
+                </h2>
             </div>
 
             <div class="sync-section">
-                <h3>☁️ Dropbox 账户配置</h3>
+                <h3>
+                    <svg class="icon" width="18" height="18" aria-hidden="true"><use href="#icon-cloud"></use></svg>
+                    Dropbox 账户配置
+                </h3>
                 <br>
                 <div class="input-group">
-                    <label for="app_key">🔑 App Key</label>
+                    <label for="app_key">
+                        <svg class="icon" width="15" height="15" aria-hidden="true"><use href="#icon-key"></use></svg>
+                        App Key
+                    </label>
                     <input type="text" id="app_key" placeholder="请输入Dropbox App Key">
                 </div>
                 <div class="input-group">
-                    <label for="app_secret">🔐 App Secret</label>
+                    <label for="app_secret">
+                        <svg class="icon" width="15" height="15" aria-hidden="true"><use href="#icon-lock"></use></svg>
+                        App Secret
+                    </label>
                     <div class="password-input">
                         <input type="password" id="app_secret" placeholder="请输入Dropbox App Secret">
                         <button type="button" class="toggle-password"
                             onclick="togglePasswordVisibilityInput('app_secret')">
-                            👁️
+                            <svg class="icon" width="18" height="18" aria-hidden="true"><use href="#icon-eye"></use></svg>
                         </button>
                     </div>
                 </div>
 
                 <div class="sync-actions">
                     <button class="primary-btn" onclick="saveToDropbox()">
-                        ⤴ 同步上传
+                        <svg class="icon" width="16" height="16" aria-hidden="true"><use href="#icon-download"></use></svg>
+                        同步上传
                     </button>
                     <button class="primary-btn" onclick="loadFromDropbox()">
-                        ⤵ 载入本地
+                        <svg class="icon" width="16" height="16" aria-hidden="true"><use href="#icon-upload"></use></svg>
+                        载入本地
                     </button>
                 </div>
             </div>
 
             <div id="syncStatusSection" class="sync-section" style="display:none;">
-                <h3>📶 连接状态</h3>
+                <h3>
+                    <svg class="icon" width="18" height="18" aria-hidden="true"><use href="#icon-wifi"></use></svg>
+                    连接状态
+                </h3>
                 <div class="status-indicator">
                     <span class="status-dot" id="statusDot"></span>
                     <span id="authStatus">连接状态</span>
@@ -706,7 +846,10 @@ website,username,password,notes
             </div>
 
             <div class="sync-section">
-                <h3>📘 同步说明</h3>
+                <h3>
+                    <svg class="icon" width="18" height="18" aria-hidden="true"><use href="#icon-book"></use></svg>
+                    同步说明
+                </h3>
                 <ol class="instructions-list">
                     <li>在 <a href="https://www.dropbox.com/developers/apps" target="_blank">Dropbox开发者网站</a> 创建应用</li>
                     <li>在 Settings 界面获取 App key 和 Secret, 同时在 Redirect URIs 处添加 "https://bejohnself.github.io/Tools/PasswordsManager/", 并选择 Allow 

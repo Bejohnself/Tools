@@ -96,7 +96,7 @@ function renderPasswordList(searchTerm = '') {
         passwordList.innerHTML = `
             <tr>
                 <td colspan="5" class="empty-state">
-                    🔍
+                    ${svg('search', 56)}
                     <p>未找到匹配的密码</p>
                     <p style="font-size: 14px; margin-top: 10px;">尝试使用不同的搜索词</p>
                 </td>
@@ -113,19 +113,22 @@ function renderPasswordList(searchTerm = '') {
             <td class="password-column password-cell">
                 <span class="password-display hidden-password">${escapeHtml(password.password)}</span>
                 <button class="show-password-btn" onclick="togglePasswordVisibility(this)">
-                    👁️
+                    ${EYE_ICON}
                 </button>
             </td>
             <td class="notes-cell" title="${escapeHtml(password.notes || '')}">${truncateText(escapeHtml(password.notes || ''), 50)}</td>
             <td class="action-buttons">
                 <button onclick="editPassword('${password.id}')" class="btn-warning">
-                    ✏️ 编辑
+                    ${svg('edit', 14)}
+                    编辑
                 </button>
                 <button onclick="deletePassword('${password.id}')" class="btn-danger">
-                    🗑️ 删除
+                    ${svg('trash', 14)}
+                    删除
                 </button>
                 <button onclick="copyToClipboard('${escapeHtml(password.password)}')" class="btn-success">
-                    📋 复制
+                    ${svg('copy', 14)}
+                    复制
                 </button>
             </td>
         `;

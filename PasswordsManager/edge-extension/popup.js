@@ -470,6 +470,57 @@ document.getElementById('syncToWebBtn').addEventListener('click', async () => {
 
 
 
+function toggleAddPasswordVisibility() {
+  const passwordInput = document.getElementById('addPassword');
+  const button = document.getElementById('toggleAddPasswordBtn');
+  const eye = button.querySelector('.icon-eye');
+  const eyeOff = button.querySelector('.icon-eye-off');
+  if (passwordInput.type === 'password') {
+    passwordInput.type = 'text';
+    eye.style.display = 'none';
+    eyeOff.style.display = 'inline-flex';
+    button.setAttribute('aria-label', '隐藏密码');
+    button.setAttribute('title', '隐藏密码');
+  } else {
+    passwordInput.type = 'password';
+    eye.style.display = 'inline-flex';
+    eyeOff.style.display = 'none';
+    button.setAttribute('aria-label', '显示密码');
+    button.setAttribute('title', '显示密码');
+  }
+}
+
+async function copyAddPassword() {
+  const passwordInput = document.getElementById('addPassword');
+  const password = passwordInput.value;
+  if (!password) {
+    setMessage('密码为空，无法复制', true);
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(password);
+    setMessage('密码已复制');
+  } catch (err) {
+    const textarea = document.createElement('textarea');
+    textarea.value = password;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      document.execCommand('copy');
+      setMessage('密码已复制');
+    } catch (err2) {
+      setMessage('复制失败：' + err2, true);
+    } finally {
+      document.body.removeChild(textarea);
+    }
+  }
+}
+
+document.getElementById('toggleAddPasswordBtn').addEventListener('click', toggleAddPasswordVisibility);
+document.getElementById('copyPasswordBtn').addEventListener('click', copyAddPassword);
+
 document.getElementById('genPasswordBtn').addEventListener('click', () => {
   const passwordInput = document.getElementById('addPassword');
   passwordInput.value = generateRandomPassword(16);

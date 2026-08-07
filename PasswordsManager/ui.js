@@ -206,7 +206,7 @@ function showSetMasterPassword() {
     loginContainer.innerHTML = `
         <div class="login-header">
             <div class="logo">
-                🔐
+                ${svg('lock', 64)}
             </div>
             <h1>智能密码管理器</h1>
             <p class="subtitle">首次使用 - 设置主密码</p>
@@ -215,30 +215,33 @@ function showSetMasterPassword() {
         <form id="setFirstPasswordForm" class="login-form">
             <div class="input-group">
                 <label for="newFirstMasterPassword">
-                    🔑 设置主密码
+                    ${svg('key', 16)}
+                    设置主密码
                 </label>
                 <div class="password-input">
                     <input type="password" id="newFirstMasterPassword" placeholder="请输入主密码" required>
                     <button type="button" class="toggle-password" onclick="togglePasswordVisibilityInput('newFirstMasterPassword')">
-                        👁️
+                        ${EYE_ICON}
                     </button>
                 </div>
             </div>
             
             <div class="input-group">
                 <label for="confirmFirstMasterPassword">
-                    ✅ 确认主密码
+                    ${svg('check', 16)}
+                    确认主密码
                 </label>
                 <div class="password-input">
                     <input type="password" id="confirmFirstMasterPassword" placeholder="请再次输入主密码" required>
                     <button type="button" class="toggle-password" onclick="togglePasswordVisibilityInput('confirmFirstMasterPassword')">
-                        👁️
+                        ${EYE_ICON}
                     </button>
                 </div>
             </div>
             
             <button type="submit" class="login-btn">
-                💾 设置主密码
+                ${svg('save', 18)}
+                设置主密码
             </button>
             
             <div class="security-tips">
@@ -246,7 +249,8 @@ function showSetMasterPassword() {
                     ⚠️ 请务必记住主密码，丢失无法恢复
                 </div>
                 <div class="tip-item">
-                    💡 建议使用强密码（包含大小写字母、数字、符号）
+                    ${svg('help', 16)}
+                    建议使用强密码（包含大小写字母、数字、符号）
                 </div>
             </div>
             
@@ -367,6 +371,11 @@ function updateShortcutHelp() {
     }
 }
 
+const svg = (name, size = 18) => `<svg class="icon" width="${size}" height="${size}" aria-hidden="true"><use href="#icon-${name}"></use></svg>`;
+
+const EYE_ICON = svg('eye');
+const EYE_OFF_ICON = svg('eyeOff');
+
 // 修改切换密码输入框显示/隐藏函数，添加ARIA属性更新
 function togglePasswordVisibilityInput(inputId) {
     const input = document.getElementById(inputId);
@@ -374,11 +383,11 @@ function togglePasswordVisibilityInput(inputId) {
 
     if (input.type === 'password') {
         input.type = 'text';
-        button.innerHTML = '🙈';
+        button.innerHTML = EYE_OFF_ICON;
         button.setAttribute('aria-label', '隐藏密码');
     } else {
         input.type = 'password';
-        button.innerHTML = '👁️';
+        button.innerHTML = EYE_ICON;
         button.setAttribute('aria-label', '显示密码');
     }
 }
@@ -407,11 +416,11 @@ function togglePasswordVisibility(button) {
 
     if (passwordSpan.classList.contains('hidden-password')) {
         passwordSpan.classList.remove('hidden-password');
-        button.innerHTML = '🙈';
+        button.innerHTML = EYE_OFF_ICON;
         button.setAttribute('aria-label', '隐藏密码');
     } else {
         passwordSpan.classList.add('hidden-password');
-        button.innerHTML = '👁️';
+        button.innerHTML = EYE_ICON;
         button.setAttribute('aria-label', '显示密码');
     }
 }

@@ -4,6 +4,23 @@
     box-sizing: border-box;
 }
 
+svg {
+    vertical-align: middle;
+}
+
+.icon {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    flex-shrink: 0;
+}
+
+button svg {
+    display: inline-flex;
+}
+
 /* ====================
    主题变量定义
    ==================== */
@@ -19,14 +36,31 @@
     --danger-color: #e63946;
     --info-color: #4895ef;
     --background-color: #f8f9fa;
-    --card-background: rgba(255, 255, 255, 0.8);
+    --card-background: rgba(255, 255, 255, 0.86);
     --text-primary: #212529;
     --text-secondary: #6c757d;
     --border-color: rgba(0, 0, 0, 0.1);
-    --shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
-    --glass-bg: rgba(255, 255, 255, 0.25);
+    --shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px -10px rgba(15, 23, 42, 0.14);
+    --shadow-2: 0 16px 48px -16px rgba(15, 23, 42, 0.22);
+    --glass-bg: rgba(255, 255, 255, 0.55);
     --glass-border: rgba(255, 255, 255, 0.18);
+    --glass-highlight: rgba(255, 255, 255, 0.65);
     --primary-color-rgb: 67, 97, 238;
+    --primary-soft: color-mix(in srgb, var(--primary-color) 15%, transparent);
+    --primary-softer: color-mix(in srgb, var(--primary-color) 8%, transparent);
+    --radius-sm: 12px;
+    --radius-md: 16px;
+    --radius-lg: 20px;
+    --grad-primary: linear-gradient(135deg, var(--primary-light), var(--primary-dark));
+    --grad-danger: linear-gradient(135deg, #ef5350, var(--danger-color));
+    --grad-success: linear-gradient(135deg, #22d3ee, var(--success-color));
+    --success-soft: color-mix(in srgb, var(--success-color) 16%, transparent);
+    --warning-soft: color-mix(in srgb, var(--warning-color) 15%, transparent);
+    --danger-soft: color-mix(in srgb, var(--danger-color) 13%, transparent);
+    --info-soft: color-mix(in srgb, var(--info-color) 15%, transparent);
+    --success-border: color-mix(in srgb, var(--success-color) 35%, transparent);
+    --warning-border: color-mix(in srgb, var(--warning-color) 35%, transparent);
+    --danger-border: color-mix(in srgb, var(--danger-color) 35%, transparent);
 }
 
 /* 1. 雾霭蓝（柔和科技感） */
@@ -79,19 +113,25 @@
     --primary-color: #6C5CE7;
     --primary-dark: #5649C9;
     --primary-light: #887DFF;
-    --secondary-color: #34495E;
+    --secondary-color: #4A3FBF;
     --success-color: #00B894;
     --warning-color: #FDCB6E;
     --danger-color: #FF7675;
     --info-color: #74B9FF;
     --background-color: #1E1E2F;
-    --card-background: rgba(30, 30, 47, 0.8);
+    --card-background: rgba(30, 30, 47, 0.82);
     --primary-color-rgb: 108, 92, 231;
     --text-primary: #E2E8F0;
     --text-secondary: #94A3B8;
     --border-color: rgba(255, 255, 255, 0.1);
-    --glass-bg: rgba(255, 255, 255, 0.08);
+    --glass-bg: rgba(255, 255, 255, 0.07);
     --glass-border: rgba(255, 255, 255, 0.12);
+    --glass-highlight: rgba(255, 255, 255, 0.06);
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -10px rgba(0, 0, 0, 0.45);
+    --shadow-2: 0 16px 48px -16px rgba(0, 0, 0, 0.55);
+    --grad-primary: linear-gradient(135deg, var(--primary-light), var(--primary-dark));
+    --grad-danger: linear-gradient(135deg, #ff5252, var(--danger-color));
+    --grad-success: linear-gradient(135deg, #00d2a0, var(--success-color));
     /* 添加链接样式 */
     a {
         color: var(--info-color); /* 使用info颜色的蓝色系 */
@@ -115,14 +155,16 @@
 
 body {
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-    background: var(--background-color);
+    background-color: var(--background-color);
     background-image:
-        radial-gradient(circle at 10% 20%, rgba(67, 97, 238, 0.1) 0%, transparent 20%),
-        radial-gradient(circle at 90% 80%, rgba(67, 97, 238, 0.1) 0%, transparent 20%);
+        radial-gradient(ellipse 90% 60% at -5% -10%, rgba(var(--primary-color-rgb), 0.14), transparent 55%),
+        radial-gradient(ellipse 70% 50% at 105% 5%, rgba(var(--primary-color-rgb), 0.10), transparent 60%),
+        radial-gradient(ellipse 80% 55% at 50% 115%, rgba(var(--primary-color-rgb), 0.08), transparent 65%);
+    background-attachment: fixed;
     min-height: 100vh;
     padding: 20px;
     color: var(--text-primary);
-    transition: all 0.3s ease;
+    transition: background 0.3s ease, color 0.2s ease;
 }
 
 /* ====================
@@ -227,13 +269,13 @@ body {
     -webkit-backdrop-filter: blur(10px); /* 添加WebKit前缀 */
     backdrop-filter: blur(10px);
     border: 1px solid var(--glass-border);
-    border-radius: 20px;
-    box-shadow: var(--shadow);
-    transition: all 0.3s ease;
+    border-radius: var(--radius-lg);
+    box-shadow: inset 0 1px 0 var(--glass-highlight), var(--shadow);
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
 }
 
 .glass-card:hover {
-    box-shadow: 0 12px 40px rgba(31, 38, 135, 0.2);
+    box-shadow: inset 0 1px 0 var(--glass-highlight), var(--shadow-2);
 }
 
 /* ====================
@@ -319,7 +361,7 @@ body {
 .password-input input:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+    box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.2);
 }
 
 .toggle-password {
@@ -349,10 +391,10 @@ body {
 .login-btn {
     width: 100%;
     padding: 16px;
-    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    background: var(--grad-primary);
     color: white;
     border: none;
-    border-radius: 12px;
+    border-radius: var(--radius-sm);
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;
@@ -365,7 +407,7 @@ body {
 
 .login-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(67, 97, 238, 0.3);
+    box-shadow: 0 8px 25px rgba(var(--primary-color-rgb), 0.3);
 }
 
 .security-tips {
@@ -393,8 +435,8 @@ body {
     display: none;
     margin-top: 20px;
     padding: 15px;
-    background: rgba(230, 57, 70, 0.1);
-    border: 1px solid rgba(230, 57, 70, 0.3);
+    background: var(--danger-soft);
+    border: 1px solid var(--danger-border);
     border-radius: 12px;
     color: var(--danger-color);
     animation: shake 0.5s ease;
@@ -458,7 +500,7 @@ body {
     border: 1px solid var(--glass-border);
     color: var(--text-primary);
     padding: 12px 15px;
-    border-radius: 12px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     transition: all 0.3s ease;
     display: flex;
@@ -476,11 +518,11 @@ body {
 }
 
 .logout-btn {
-    background: linear-gradient(135deg, var(--danger-color), #c1121f);
+    background: var(--grad-danger);
     color: white;
     border: none;
     padding: 12px 20px;
-    border-radius: 12px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     transition: all 0.3s ease;
     display: flex;
@@ -510,29 +552,29 @@ body {
     background: var(--glass-bg);
     backdrop-filter: blur(10px);
     border: 1px solid var(--glass-border);
-    border-radius: 16px;
+    border-radius: var(--radius-md);
     padding: 25px;
     display: flex;
     align-items: center;
     gap: 20px;
     transition: all 0.3s ease;
-    box-shadow: var(--shadow);
+    box-shadow: inset 0 1px 0 var(--glass-highlight), var(--shadow);
 }
 
 .stat-card:hover {
     transform: translateY(-5px);
-    box-shadow: var(--shadow);
+    box-shadow: inset 0 1px 0 var(--glass-highlight), var(--shadow-2);
 }
 
 .stat-icon {
     width: 60px;
     height: 60px;
-    border-radius: 16px;
-    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    border-radius: var(--radius-md);
+    background: var(--primary-soft);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
+    color: var(--primary-color);
     font-size: 24px;
     flex-shrink: 0;
 }
@@ -576,7 +618,7 @@ body {
     background: var(--glass-bg);
     backdrop-filter: blur(10px);
     border: 1px solid var(--glass-border);
-    border-radius: 20px;
+    border-radius: var(--radius-lg);
     padding: 30px;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -585,12 +627,12 @@ body {
     display: flex;
     flex-direction: column;
     height: 100%;
-    box-shadow: var(--shadow);
+    box-shadow: inset 0 1px 0 var(--glass-highlight), var(--shadow);
 }
 
 .menu-card:hover {
     transform: translateY(-10px);
-    box-shadow: var(--shadow);
+    box-shadow: inset 0 1px 0 var(--glass-highlight), var(--shadow-2);
 }
 
 .menu-card::before {
@@ -600,7 +642,7 @@ body {
     left: 0;
     right: 0;
     height: 4px;
-    background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+    background: var(--primary-color);
 }
 
 .card-icon {
@@ -617,15 +659,23 @@ body {
 }
 
 .card-icon.primary {
-    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    background: var(--primary-soft);
+    color: var(--primary-color);
 }
 
 .card-icon.success {
-    background: linear-gradient(135deg, var(--success-color), #3a0ca3);
+    background: var(--primary-soft);
+    color: var(--primary-color);
 }
 
 .card-icon.warning {
-    background: linear-gradient(135deg, var(--warning-color), #7209b7);
+    background: var(--primary-softer);
+    color: var(--primary-color);
+}
+
+.card-icon.info {
+    background: var(--primary-soft);
+    color: var(--primary-color);
 }
 
 .card-content {
@@ -700,7 +750,7 @@ body {
     border: 1px solid var(--glass-border);
     color: var(--text-primary);
     padding: 12px 20px;
-    border-radius: 12px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
     transition: all 0.3s ease;
     display: flex;
@@ -756,15 +806,15 @@ body {
 .search-box input:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+    box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.2);
 }
 
 .search-box button {
     padding: 15px 25px;
-    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    background: var(--grad-primary);
     color: white;
     border: none;
-    border-radius: 12px;
+    border-radius: var(--radius-sm);
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;
@@ -777,7 +827,7 @@ body {
 
 .search-box button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(67, 97, 238, 0.3);
+    box-shadow: 0 8px 25px rgba(var(--primary-color-rgb), 0.3);
 }
 
 .filter-options {
@@ -865,6 +915,11 @@ th {
 th i {
     margin-right: 8px;
     color: var(--primary-color);
+}
+
+th svg {
+    color: var(--primary-color);
+    margin-right: 8px;
 }
 
 td {
@@ -962,7 +1017,7 @@ tr:hover {
 }
 
 .btn-danger {
-    background: rgba(230, 57, 70, 0.1);
+    background: var(--danger-soft);
     color: var(--danger-color);
 }
 
@@ -972,7 +1027,7 @@ tr:hover {
 }
 
 .btn-warning {
-    background: rgba(247, 37, 133, 0.1);
+    background: var(--warning-soft);
     color: var(--warning-color);
 }
 
@@ -982,7 +1037,7 @@ tr:hover {
 }
 
 .btn-success {
-    background: rgba(76, 201, 240, 0.1);
+    background: var(--success-soft);
     color: var(--success-color);
 }
 
@@ -1153,7 +1208,7 @@ input[type="checkbox"]:checked::after {
 .form-group textarea:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+    box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.2);
 }
 
 .generate-password {
@@ -1229,7 +1284,7 @@ input[type="checkbox"]:checked::after {
 .key-input:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+    box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.2);
 }
 
 .key-input.recording {
@@ -1239,10 +1294,10 @@ input[type="checkbox"]:checked::after {
 
 .primary-btn {
     padding: 15px 30px;
-    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    background: var(--grad-primary);
     color: white;
     border: none;
-    border-radius: 12px;
+    border-radius: var(--radius-sm);
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;
@@ -1254,7 +1309,7 @@ input[type="checkbox"]:checked::after {
 
 .primary-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(67, 97, 238, 0.3);
+    box-shadow: 0 8px 25px rgba(var(--primary-color-rgb), 0.3);
 }
 
 .secondary-btn {
@@ -1262,7 +1317,7 @@ input[type="checkbox"]:checked::after {
     background: var(--glass-bg);
     border: 1px solid var(--glass-border);
     color: var(--text-primary);
-    border-radius: 12px;
+    border-radius: var(--radius-sm);
     font-size: 16px;
     font-weight: 600;
     cursor: pointer;
@@ -1367,14 +1422,14 @@ input[type="checkbox"]:checked::after {
 }
 
 .import-result.success {
-    background: rgba(76, 201, 240, 0.1);
-    border: 1px solid rgba(76, 201, 240, 0.3);
+    background: var(--success-soft);
+    border: 1px solid var(--success-border);
     color: var(--success-color);
 }
 
 .import-result.error {
-    background: rgba(230, 57, 70, 0.1);
-    border: 1px solid rgba(230, 57, 70, 0.3);
+    background: var(--danger-soft);
+    border: 1px solid var(--danger-border);
     color: var(--danger-color);
     border-bottom: 3px solid var(--primary-color);
 }
@@ -1398,7 +1453,7 @@ input[type="checkbox"]:checked::after {
     background: var(--glass-bg);
     backdrop-filter: blur(10px);
     border: 1px solid var(--glass-border);
-    border-radius: 20px;
+    border-radius: var(--radius-lg);
     padding: 30px;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -1406,11 +1461,12 @@ input[type="checkbox"]:checked::after {
     display: flex;
     flex-direction: column;
     min-height: 280px;
+    box-shadow: inset 0 1px 0 var(--glass-highlight), var(--shadow);
 }
 
 .export-card:hover {
     transform: translateY(-5px);
-    box-shadow: var(--shadow);
+    box-shadow: inset 0 1px 0 var(--glass-highlight), var(--shadow-2);
 }
 
 .card-icon.large {
@@ -1491,11 +1547,11 @@ input[type="checkbox"]:checked::after {
 }
 
 .notification.success {
-    background: linear-gradient(135deg, var(--success-color), #3a0ca3);
+    background: var(--grad-success);
 }
 
 .notification.error {
-    background: linear-gradient(135deg, var(--danger-color), #c1121f);
+    background: var(--grad-danger);
 }
 
 /* ====================
@@ -1521,13 +1577,13 @@ input[type="checkbox"]:checked::after {
     -webkit-backdrop-filter: blur(10px); /* 添加WebKit前缀 */
     backdrop-filter: blur(10px);
     border: 1px solid var(--glass-border);
-    border-radius: 15px;
+    border-radius: var(--radius-md);
     padding: 0;
     max-width: 500px;
     width: 90%;
     max-height: 80vh;
     overflow: hidden;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    box-shadow: inset 0 1px 0 var(--glass-highlight), 0 10px 40px rgba(0, 0, 0, 0.25);
 }
 
 .modal-header {
@@ -1737,12 +1793,11 @@ kbd {
     background: #2d2d44;
 }
 
-[data-theme="night-black"] .stat-icon {
-    background: linear-gradient(135deg, #6C5CE7, #34495E);
-}
-
-[data-theme="night-black"] .menu-card::before {
-    background: linear-gradient(90deg, #6C5CE7, #34495E);
+[data-theme="night-black"] body {
+    background-image:
+        radial-gradient(ellipse 90% 60% at -5% -10%, rgba(var(--primary-color-rgb), 0.08), transparent 55%),
+        radial-gradient(ellipse 70% 50% at 105% 5%, rgba(var(--primary-color-rgb), 0.06), transparent 60%),
+        radial-gradient(ellipse 80% 55% at 50% 115%, rgba(var(--primary-color-rgb), 0.05), transparent 65%);
 }
 
 /* ====================
@@ -1813,5 +1868,5 @@ kbd {
 #syncPage .input-group input[type="text"]:focus {
     outline: none;
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+    box-shadow: 0 0 0 3px rgba(var(--primary-color-rgb), 0.2);
 }
