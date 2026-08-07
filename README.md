@@ -12,7 +12,7 @@
 
 ## 快速食用
 
-1. 下载 [edge_extension.zip](https://github.com/Bejohnself/Tools/releases/download/web/edge-extension_20260428.zip)
+1. 下载 [edge_extension.zip](https://github.com/Bejohnself/Tools/releases/download/web/edge-extension_20260807.zip)
 2. 浏览器打开 **`edge://extensions/`**（Chrome 用 `chrome://extensions/`）
 3. 点击 **Load unpacked**（加载解压缩的扩展 / 加载已解压的扩展程序）
 4. 导入压缩包，搞定！
