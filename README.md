@@ -26,6 +26,10 @@
 
 > 后续有引导，打开就知道 😉
 
+## 安卓安装
+
+下载 [PasswordsManager.apk](https://github.com/Bejohnself/Tools/releases/download/web/PasswordsManager_20260928.apk) 安装即可，数据格式与网页端/扩展兼容。
+
 # 未来计划
 
 暂时还没想到呢，如果你有好想法想加盟，非常欢迎随时联系建议，或者Pull requests留下你的足迹！
@@ -33,5 +37,6 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Edge_Extension-密码管理器-3B82F6?style=flat-square&logo=microsoftedge" />
   <img src="https://img.shields.io/badge/Chrome-可用-4285F4?style=flat-square&logo=googlechrome" />
+  <img src="https://img.shields.io/badge/Android-可用-3DDC84?style=flat-square&logo=android" />
   <img src="https://img.shields.io/badge/开源-免费-success?style=flat-square" />
 </p>
