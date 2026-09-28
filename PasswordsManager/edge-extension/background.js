@@ -31,7 +31,6 @@ import {
 
 let inMemoryMasterPassword = null;
 const DEBUG_AUTOFILL = true;
-const REMEMBER_DEVICE_DAYS = 7;
 
 
 function debugLog(...args) {
@@ -171,29 +170,19 @@ async function encryptLegacyPassword(plainPassword, key) {
 }
 
 
-async function saveRememberDeviceToken(masterPassword, days = REMEMBER_DEVICE_DAYS) {
+async function saveRememberDeviceToken(masterPassword) {
   const encrypted = await encryptRememberedMasterPassword(masterPassword);
   if (!encrypted) {
     return false;
   }
 
-  const expiresAt = Date.now() + Math.max(1, Number(days || REMEMBER_DEVICE_DAYS)) * 24 * 60 * 60 * 1000;
-  await setRememberDeviceToken({
-    ...encrypted,
-    expiresAt
-  });
+  await setRememberDeviceToken(encrypted);
   return true;
 }
 
 async function loadRememberedMasterIfValid() {
   const token = await getRememberDeviceToken();
   if (!token) {
-    return null;
-  }
-
-  const expiresAt = Number(token.expiresAt || 0);
-  if (!expiresAt || Date.now() > expiresAt) {
-    await clearRememberDeviceToken();
     return null;
   }
 
@@ -225,15 +214,9 @@ async function getRememberDeviceStatus() {
     return { rememberDevicePreference, rememberDeviceUntil: null };
   }
 
-  const expiresAt = Number(token.expiresAt || 0);
-  if (!expiresAt || Date.now() > expiresAt) {
-    await clearRememberDeviceToken();
-    return { rememberDevicePreference, rememberDeviceUntil: null };
-  }
-
   return {
     rememberDevicePreference,
-    rememberDeviceUntil: new Date(expiresAt).toISOString()
+    rememberDeviceUntil: null
   };
 }
 
@@ -359,7 +342,7 @@ async function unlock(masterPassword, rememberDevice = false) {
   await setRememberDevicePreference(Boolean(rememberDevice));
 
   if (rememberDevice) {
-    const remembered = await saveRememberDeviceToken(masterPassword, REMEMBER_DEVICE_DAYS);
+    const remembered = await saveRememberDeviceToken(masterPassword);
     if (!remembered) {
       return { ok: true, message: '已解锁，但记住设备保存失败' };
     }
@@ -433,7 +416,7 @@ async function rotateMasterFromWeb(payload) {
   const rememberPreference = await getRememberDevicePreference();
   await clearRememberDeviceToken();
   if (rememberPreference) {
-    await saveRememberDeviceToken(newPassword, REMEMBER_DEVICE_DAYS);
+    await saveRememberDeviceToken(newPassword);
   }
 
   return { ok: true, count: Array.isArray(entries) ? entries.length : 0 };
