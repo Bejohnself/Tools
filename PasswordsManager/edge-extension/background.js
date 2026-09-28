@@ -452,6 +452,63 @@ async function getCredentialsForUrl(url) {
 
 
 
+function entryRecencyScore(entry) {
+  return Date.parse(entry?.lastUsedAt || entry?.updatedAt || entry?.createdAt || 0) || 0;
+}
+
+function isEntryForDomain(entry, activeDomain) {
+  if (!activeDomain || !entry?.domain) {
+    return false;
+  }
+  return entry.domain === activeDomain || activeDomain.endsWith(`.${entry.domain}`);
+}
+
+async function searchCredentials(payload = {}) {
+  const entries = await decryptVault();
+  if (!entries) {
+    return { ok: false, reason: 'LOCKED' };
+  }
+
+  const keyword = String(payload.keyword || '').trim().toLowerCase();
+  if (!keyword) {
+    return { ok: true, results: [] };
+  }
+
+  const tokens = keyword.split(/\s+/).filter(Boolean);
+  const activeDomain = normalizeDomainLoose(payload.url || '');
+
+  const matched = entries.filter((item) => {
+    if (!item) {
+      return false;
+    }
+    const haystack = [item.domain, item.website, item.username, item.notes]
+      .map((value) => String(value || '').toLowerCase())
+      .join(' ');
+    return tokens.every((token) => haystack.includes(token));
+  });
+
+  matched.sort((a, b) => {
+    const priorityDiff = Number(!isEntryForDomain(a, activeDomain)) - Number(!isEntryForDomain(b, activeDomain));
+    if (priorityDiff !== 0) {
+      return priorityDiff;
+    }
+    return entryRecencyScore(b) - entryRecencyScore(a);
+  });
+
+  const results = matched.slice(0, 50).map((item) => ({
+    id: item.id,
+    domain: item.domain,
+    website: item.website || item.domain,
+    username: item.username,
+    password: item.password,
+    notes: item.notes || '',
+    lastUsedAt: item.lastUsedAt || null
+  }));
+
+  return { ok: true, results, total: entries.length };
+}
+
+
 async function markCredentialUsed(payload) {
   const entries = await decryptVault();
   if (!entries) {
@@ -988,6 +1045,9 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       case 'GET_CREDENTIALS_FOR_URL':
 
         sendResponse(await getCredentialsForUrl(message.url || ''));
+        break;
+      case 'SEARCH_CREDENTIALS':
+        sendResponse(await searchCredentials(message.payload || {}));
         break;
       case 'CREDENTIAL_USED':
         sendResponse(await markCredentialUsed(message.payload || {}));

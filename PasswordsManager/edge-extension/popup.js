@@ -154,6 +154,34 @@ async function syncActiveWebsiteToInput() {
   return keyDomain;
 }
 
+let lastAutoSearchDomain = '';
+
+async function syncActiveDomainToSearch() {
+  if (!searchInputEl) {
+    return;
+  }
+
+  const activeTab = await getActiveTab();
+  const tabUrl = activeTab?.url || '';
+  const keyDomain = /^https?:\/\//i.test(tabUrl) ? toKeyDomain(tabUrl) : '';
+  const currentValue = searchInputEl.value.trim();
+
+  if (!keyDomain) {
+    if (currentValue && currentValue === lastAutoSearchDomain) {
+      searchInputEl.value = '';
+      lastAutoSearchDomain = '';
+      clearSearchResults();
+    }
+    return;
+  }
+
+  if (currentValue === '' || currentValue === lastAutoSearchDomain) {
+    searchInputEl.value = keyDomain;
+    lastAutoSearchDomain = keyDomain;
+    await runSearch();
+  }
+}
+
 
 function extractSalt(authRaw) {
   try {
@@ -289,6 +317,14 @@ async function refreshStatus() {
 
   const status = await sendMessage({ type: 'GET_STATUS' });
 
+  if (!status.unlocked) {
+    clearSearchResults();
+    lastAutoSearchDomain = '';
+    if (searchInputEl) {
+      searchInputEl.value = '';
+    }
+  }
+
   if (!status.hasMaster) {
     showPanel(setupPanel);
     setStatusBadge('未初始化', 'warn');
@@ -323,6 +359,7 @@ async function refreshStatus() {
 
   }
   await syncActiveWebsiteToInput();
+  await syncActiveDomainToSearch();
   setMessage('已解锁，点击输入框可手动填充');
 }
 
@@ -398,6 +435,7 @@ document.getElementById('unlockBtn').addEventListener('click', async () => {
 
 document.getElementById('lockBtn').addEventListener('click', async () => {
   await sendMessage({ type: 'LOCK' });
+  clearSearchResults();
   await refreshStatus();
 });
 
@@ -490,32 +528,35 @@ function toggleAddPasswordVisibility() {
   }
 }
 
-async function copyAddPassword() {
-  const passwordInput = document.getElementById('addPassword');
-  const password = passwordInput.value;
-  if (!password) {
-    setMessage('密码为空，无法复制', true);
+async function copyTextWithFeedback(text, label) {
+  if (!text) {
+    setMessage(`${label}为空，无法复制`, true);
     return;
   }
   try {
-    await navigator.clipboard.writeText(password);
-    setMessage('密码已复制');
+    await navigator.clipboard.writeText(text);
+    setMessage(`${label}已复制`);
   } catch (err) {
     const textarea = document.createElement('textarea');
-    textarea.value = password;
+    textarea.value = text;
     textarea.style.position = 'fixed';
     textarea.style.opacity = '0';
     document.body.appendChild(textarea);
     textarea.select();
     try {
       document.execCommand('copy');
-      setMessage('密码已复制');
+      setMessage(`${label}已复制`);
     } catch (err2) {
       setMessage('复制失败：' + err2, true);
     } finally {
       document.body.removeChild(textarea);
     }
   }
+}
+
+async function copyAddPassword() {
+  const passwordInput = document.getElementById('addPassword');
+  await copyTextWithFeedback(passwordInput.value, '密码');
 }
 
 document.getElementById('toggleAddPasswordBtn').addEventListener('click', toggleAddPasswordVisibility);
@@ -568,6 +609,146 @@ document.getElementById('addBtn').addEventListener('click', async () => {
   setMessage(result.added ? '新增成功' : '已存在同用户名记录，已更新密码');
   await refreshStatus();
 });
+
+
+const searchInputEl = document.getElementById('searchInput');
+const searchResultsEl = document.getElementById('searchResults');
+
+const SEARCH_MASK = '••••••••';
+let searchDebounceTimer = null;
+const searchSecrets = new Map();
+
+function clearSearchResults() {
+  if (searchDebounceTimer) {
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = null;
+  }
+  searchSecrets.clear();
+  if (searchResultsEl) {
+    searchResultsEl.innerHTML = '';
+  }
+}
+
+function makeSearchActionButton(text, title) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'search-action-btn';
+  btn.textContent = text;
+  btn.title = title;
+  return btn;
+}
+
+function renderSearchResultItem(item) {
+  const li = document.createElement('li');
+  li.className = 'search-item';
+
+  const head = document.createElement('div');
+  head.className = 'search-item-head';
+  const userEl = document.createElement('span');
+  userEl.className = 'search-username';
+  userEl.textContent = item.username || '(无用户名)';
+  const domainEl = document.createElement('span');
+  domainEl.className = 'search-domain';
+  domainEl.textContent = item.domain || item.website || '';
+  head.append(userEl, domainEl);
+
+  const pwdRow = document.createElement('div');
+  pwdRow.className = 'search-pwd-row';
+  const pwdEl = document.createElement('code');
+  pwdEl.className = 'search-password';
+  pwdEl.textContent = SEARCH_MASK;
+
+  const actions = document.createElement('div');
+  actions.className = 'search-actions';
+
+  const itemId = String(item.id || `${item.domain}-${item.username}`);
+  searchSecrets.set(itemId, item.password || '');
+
+  let revealed = false;
+  const toggleBtn = makeSearchActionButton('显示', '显示/隐藏密码');
+  toggleBtn.addEventListener('click', () => {
+    revealed = !revealed;
+    pwdEl.textContent = revealed ? (searchSecrets.get(itemId) || '') : SEARCH_MASK;
+    toggleBtn.textContent = revealed ? '隐藏' : '显示';
+  });
+
+  const copyUserBtn = makeSearchActionButton('账号', '复制用户名');
+  copyUserBtn.addEventListener('click', () => copyTextWithFeedback(item.username || '', '账号'));
+
+  const copyPwdBtn = makeSearchActionButton('密码', '复制密码');
+  copyPwdBtn.addEventListener('click', () => copyTextWithFeedback(searchSecrets.get(itemId) || '', '密码'));
+
+  const copyBothBtn = makeSearchActionButton('账号+密码', '复制用户名和密码（换行分隔）');
+  copyBothBtn.addEventListener('click', () => copyTextWithFeedback(`${item.username || ''}\n${searchSecrets.get(itemId) || ''}`, '账号+密码'));
+
+  actions.append(toggleBtn, copyUserBtn, copyPwdBtn, copyBothBtn);
+  pwdRow.append(pwdEl, actions);
+  li.append(head, pwdRow);
+
+  if (item.notes) {
+    const notesEl = document.createElement('div');
+    notesEl.className = 'search-notes';
+    notesEl.textContent = item.notes;
+    li.append(notesEl);
+  }
+
+  return li;
+}
+
+function renderSearchResults(list) {
+  searchSecrets.clear();
+  searchResultsEl.innerHTML = '';
+
+  if (!list.length) {
+    const empty = document.createElement('li');
+    empty.className = 'search-empty';
+    empty.textContent = '无匹配记录';
+    searchResultsEl.append(empty);
+    return;
+  }
+
+  for (const item of list) {
+    searchResultsEl.append(renderSearchResultItem(item));
+  }
+}
+
+async function runSearch() {
+  const keyword = (searchInputEl?.value || '').trim();
+  if (!keyword || !searchResultsEl) {
+    clearSearchResults();
+    return;
+  }
+
+  const activeTab = await getActiveTab();
+  const result = await sendMessage({
+    type: 'SEARCH_CREDENTIALS',
+    payload: { keyword, url: activeTab?.url || '' }
+  });
+
+  if (!result?.ok) {
+    searchSecrets.clear();
+    searchResultsEl.innerHTML = '';
+    setMessage(result?.reason === 'LOCKED' ? '扩展已锁定，无法查询' : (result?.message || '查询失败'), true);
+    return;
+  }
+
+  renderSearchResults(result.results || []);
+}
+
+if (searchInputEl) {
+  searchInputEl.addEventListener('input', () => {
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(runSearch, 250);
+  });
+  searchInputEl.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter') {
+      return;
+    }
+    event.preventDefault();
+    clearTimeout(searchDebounceTimer);
+    runSearch();
+  });
+}
 
 
 document.getElementById('refreshBtn').addEventListener('click', refreshStatus);
