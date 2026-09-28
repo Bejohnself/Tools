@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "Be Password Manager Extension",
+  "description": "主密码解锁、自动填充、自动保存注册账号密码",
+  "version": "0.1.0",
+  "permissions": ["storage", "tabs", "scripting"],
+
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Password Manager",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
