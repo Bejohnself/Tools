@@ -7,7 +7,8 @@
 | 目录 | 说明 |
 |---|---|
 | `PasswordsManager/` | 密码管理器网页版（本地加密 · 导入导出 · 云同步 · 快捷键） |
-| `edge-extension/` | 密码管理器 Edge/Chrome 原生扩展 |
+| `PasswordsManager/edge-extension/` | 密码管理器 Edge/Chrome 原生扩展 |
+| `PasswordsManager/android/` | 密码管理器安卓版（Kotlin + Jetpack Compose，数据格式与网页端兼容） |
 | `大学生体测计算器/` | 大学生体测计算器网页版 |
 
 密码管理器在线体验：https://bejohnself.github.io/Tools/PasswordsManager/
@@ -18,7 +19,7 @@
 
 ## 扩展安装（Edge/Chrome）
 
-1. 下载仓库（或只取 `edge-extension/` 目录），也可下载 [edge_extension.zip](https://github.com/Bejohnself/Tools/releases/download/web/edge-extension_20260928.zip)
+1. 下载仓库（或只取 `PasswordsManager/edge-extension/` 目录），也可下载 [edge_extension.zip](https://github.com/Bejohnself/Tools/releases/download/web/edge-extension_20260928.zip)
 2. 浏览器打开 **`edge://extensions/`**（Chrome 用 `chrome://extensions/`）
 3. 点击 **Load unpacked**（加载解压缩的扩展 / 加载已解压的扩展程序），选择 `edge-extension` 文件夹
 4. 搞定！
