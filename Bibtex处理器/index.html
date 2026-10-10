@@ -1,0 +1,1175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BibTeX 获取工具</title>
+<style>
+  :root {
+    --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    --font-mono: "JetBrains Mono", Consolas, "Courier New", monospace;
+    --accent-1: #6366f1;
+    --accent-2: #8b5cf6;
+    --grad: linear-gradient(135deg, #6366f1, #8b5cf6);
+    --bg: #f4f5fb;
+    --card: rgba(255, 255, 255, 0.72);
+    --border: rgba(15, 23, 42, 0.08);
+    --border-strong: rgba(15, 23, 42, 0.22);
+    --text: #101426;
+    --muted: #66708c;
+    --track: rgba(15, 23, 42, 0.08);
+    --code-bg: rgba(15, 23, 42, 0.04);
+    --dz-bg: rgba(255, 255, 255, 0.5);
+    --dz-active: rgba(99, 102, 241, 0.09);
+    --hover: rgba(15, 23, 42, 0.045);
+    --shadow: 0 10px 30px -12px rgba(15, 23, 42, 0.18);
+    --ok: #10b981;
+    --warn: #f59e0b;
+    --fail: #ef4444;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b0d1f;
+      --card: rgba(26, 29, 51, 0.62);
+      --border: rgba(255, 255, 255, 0.08);
+      --border-strong: rgba(255, 255, 255, 0.22);
+      --text: #e7e9f4;
+      --muted: #98a0bd;
+      --track: rgba(255, 255, 255, 0.1);
+      --code-bg: rgba(0, 0, 0, 0.28);
+      --dz-bg: rgba(255, 255, 255, 0.04);
+      --dz-active: rgba(139, 92, 246, 0.16);
+      --hover: rgba(255, 255, 255, 0.05);
+      --shadow: 0 12px 32px -14px rgba(0, 0, 0, 0.6);
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  *::-webkit-scrollbar { width: 8px; height: 8px; }
+  *::-webkit-scrollbar-track { background: transparent; }
+  *::-webkit-scrollbar-thumb { background: rgba(120, 126, 160, 0.35); border-radius: 999px; }
+  *::-webkit-scrollbar-thumb:hover { background: rgba(120, 126, 160, 0.55); }
+  body {
+    font-family: var(--font-sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 36px 20px 64px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  .bg-deco { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 0; }
+  .blob { position: absolute; border-radius: 50%; filter: blur(90px); opacity: .55; animation: drift 20s ease-in-out infinite alternate; }
+  .blob-1 { width: 430px; height: 430px; top: -140px; left: -120px; background: radial-gradient(circle, rgba(99, 102, 241, .5), transparent 70%); }
+  .blob-2 { width: 400px; height: 400px; bottom: -160px; right: -140px; background: radial-gradient(circle, rgba(139, 92, 246, .45), transparent 70%); animation-delay: -7s; }
+  .blob-3 { width: 320px; height: 320px; top: 38%; left: 62%; background: radial-gradient(circle, rgba(217, 70, 239, .25), transparent 70%); animation-delay: -13s; }
+  @media (prefers-color-scheme: dark) { .blob { opacity: .75; } }
+  @keyframes drift {
+    from { transform: translate(0, 0) scale(1); }
+    to   { transform: translate(44px, 34px) scale(1.12); }
+  }
+  .container { position: relative; z-index: 1; max-width: 840px; margin: 0 auto; }
+
+  .hero { padding: 4px 0 6px; animation: rise .5s ease both; }
+  .hero-head { display: flex; align-items: center; gap: 12px; }
+  .logo {
+    display: flex; align-items: center; justify-content: center;
+    width: 46px; height: 46px; border-radius: 13px;
+    background: var(--grad); color: #fff; flex-shrink: 0;
+    box-shadow: 0 8px 20px -6px rgba(99, 102, 241, .55);
+  }
+  h1 { font-size: 23px; font-weight: 800; letter-spacing: -0.02em; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .chip-accent {
+    font-size: 11px; font-weight: 700; letter-spacing: .02em;
+    color: #fff; background: var(--grad);
+    padding: 3px 10px; border-radius: 999px;
+    box-shadow: 0 3px 10px -2px rgba(139, 92, 246, .5);
+  }
+  .sub { color: var(--muted); font-size: 13px; margin-top: 8px; }
+  .foot { text-align: center; color: var(--muted); font-size: 12px; margin-top: 26px; }
+
+  .card {
+    margin-top: 18px; padding: 22px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    animation: rise .5s ease both;
+  }
+  #progressWrap { animation-delay: .06s; }
+  #outputWrap { animation-delay: .12s; }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  #dropzone {
+    border: 2px dashed var(--border-strong);
+    border-radius: 16px;
+    background: var(--dz-bg);
+    padding: 46px 20px 38px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .25s ease;
+    color: var(--muted);
+    font-size: 14.5px;
+  }
+  #dropzone:hover { border-color: var(--accent-1); }
+  #dropzone .dz-icon { display: block; margin: 0 auto 14px; color: var(--accent-1); transition: transform .25s ease; }
+  #dropzone:hover .dz-icon, #dropzone.dragover .dz-icon { transform: translateY(-4px); }
+  #dropzone.dragover {
+    border-color: var(--accent-2);
+    background: var(--dz-active);
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, .14);
+  }
+  #dropzone .dz-text { color: var(--text); font-weight: 600; }
+  #dropzone small { display: block; margin-top: 8px; color: var(--muted); font-size: 12px; opacity: .8; }
+
+  #preview { display: none; margin-top: 16px; }
+  .stat {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 13px; color: var(--muted);
+    background: var(--hover);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 6px 14px;
+    margin: 3px 4px 0 0;
+  }
+  .stat b { color: var(--text); font-weight: 700; }
+  .stat.dots::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); opacity: .6; }
+  .stat.dots.doi::before { background: var(--accent-1); opacity: 1; }
+  .stat.dots.isbn::before { background: var(--accent-2); opacity: 1; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    border: none; border-radius: 12px;
+    font-family: inherit; font-weight: 600; font-size: 15px;
+    cursor: pointer; user-select: none;
+    transition: transform .15s ease, box-shadow .2s ease, filter .2s ease, opacity .2s;
+  }
+  .btn:disabled { opacity: .45; cursor: not-allowed; filter: none; box-shadow: none; transform: none; }
+  .btn-primary {
+    width: 100%; margin-top: 16px; padding: 14px;
+    color: #fff; background: var(--grad);
+    box-shadow: 0 10px 22px -8px rgba(99, 102, 241, .55);
+  }
+  .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 14px 28px -10px rgba(99, 102, 241, .7); filter: brightness(1.05); }
+  .btn-primary:active:not(:disabled) { transform: translateY(0); }
+  .btn-success {
+    padding: 9px 18px; font-size: 13.5px;
+    color: #fff; background: var(--ok);
+    box-shadow: 0 8px 18px -8px rgba(16, 185, 129, .55);
+  }
+  .btn-success:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 10px 22px -8px rgba(16, 185, 129, .6); filter: brightness(1.05); }
+
+  /* ── 可调参数面板 ── */
+  .settings {
+    margin-top: 16px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--dz-bg);
+    overflow: visible;
+  }
+  .settings > summary {
+    list-style: none;
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px;
+    cursor: pointer; user-select: none;
+    font-size: 14px; font-weight: 700;
+  }
+  .settings > summary::-webkit-details-marker { display: none; }
+  .settings-state { font-size: 12px; font-weight: 500; color: var(--muted); }
+  .settings-chevron { margin-left: auto; color: var(--muted); transition: transform .2s ease; flex-shrink: 0; }
+  .settings[open] .settings-chevron { transform: rotate(180deg); }
+  .settings-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+    padding: 0 14px 14px;
+  }
+  @media (max-width: 720px) { .settings-grid { grid-template-columns: 1fr; } }
+  .settings-group {
+    border: 1px solid var(--border); border-radius: 12px;
+    background: var(--card); padding: 14px;
+  }
+  .settings-group-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+  .settings-group-title { font-size: 13px; font-weight: 700; }
+  .settings-group-hint { font-size: 11px; color: var(--muted); }
+  .preset-row { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 2px; border-radius: 10px; background: var(--track); margin-bottom: 4px; }
+  .preset-btn, .seg-btn {
+    border: none; background: transparent; color: var(--muted);
+    font-family: inherit; font-size: 12.5px; font-weight: 600;
+    padding: 5px 10px; border-radius: 8px; cursor: pointer;
+    transition: background .15s ease, color .15s ease, box-shadow .15s ease;
+  }
+  .preset-btn:hover:not(:disabled), .seg-btn:hover:not(:disabled) { color: var(--text); }
+  .preset-btn.active, .seg-btn.active {
+    color: #fff; background: var(--grad);
+    box-shadow: 0 3px 10px -4px rgba(99, 102, 241, .6);
+  }
+  .preset-btn:disabled, .seg-btn:disabled { opacity: .5; cursor: not-allowed; }
+  .param-row { padding: 8px 0; border-top: 1px dashed var(--border); }
+  .param-row:first-child { border-top: none; }
+  .param-label { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+  .param-name { position: relative; display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 600; }
+  .param-label small { font-size: 11px; color: var(--muted); text-align: right; }
+  .info-btn {
+    width: 15px; height: 15px; padding: 0; border-radius: 50%;
+    border: 1px solid var(--border-strong); background: transparent;
+    color: var(--muted); font-family: inherit; font-size: 10px; font-weight: 700;
+    line-height: 1; cursor: help; flex-shrink: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .info-btn:hover, .info-btn:focus-visible { color: #fff; background: var(--accent-1); border-color: transparent; outline: none; }
+  .info-tip {
+    position: absolute; top: calc(100% + 7px); left: 0; z-index: 30;
+    width: max-content; max-width: 250px;
+    padding: 8px 10px; border-radius: 9px;
+    background: #1b1f36; color: #f2f3fb;
+    font-size: 11.5px; font-weight: 500; line-height: 1.55; text-align: left; white-space: normal;
+    box-shadow: 0 10px 24px -10px rgba(0, 0, 0, .5);
+    opacity: 0; visibility: hidden; transform: translateY(-4px);
+    transition: opacity .15s ease, transform .15s ease, visibility .15s ease;
+    pointer-events: none;
+  }
+  .info-btn:hover + .info-tip,
+  .info-btn:focus-visible + .info-tip,
+  .param-name.open .info-tip { opacity: 1; visibility: visible; transform: translateY(0); }
+  .segmented { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 2px; border-radius: 10px; background: var(--track); }
+  .range-row { display: flex; align-items: center; gap: 10px; }
+  .range-row input[type="range"] { flex: 1; min-width: 0; accent-color: var(--accent-1); }
+  .range-val { font-family: var(--font-mono); font-size: 11.5px; color: var(--muted); min-width: 46px; text-align: right; }
+  .toggle-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    border: 1px solid var(--border-strong); background: transparent;
+    border-radius: 999px; padding: 5px 12px 5px 8px;
+    font-family: inherit; font-size: 12.5px; font-weight: 600;
+    color: var(--muted); cursor: pointer;
+    transition: background .18s ease, border-color .18s ease, color .18s ease;
+  }
+  .toggle-btn .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--track); transition: background .18s ease, box-shadow .18s ease; }
+  .toggle-btn[aria-checked="true"] { color: var(--text); border-color: transparent; background: rgba(99, 102, 241, .12); }
+  .toggle-btn[aria-checked="true"] .dot { background: var(--accent-1); box-shadow: 0 0 0 3px rgba(99, 102, 241, .18); }
+  .toggle-btn:disabled { opacity: .5; cursor: not-allowed; }
+  .settings.locked #settingsBody { opacity: .55; pointer-events: none; }
+
+  #progressWrap { display: none; }
+  #barOuter { background: var(--track); border-radius: 999px; height: 10px; overflow: hidden; }
+  #bar {
+    height: 100%; width: 0; border-radius: 999px;
+    background: var(--grad); background-size: 200% 100%;
+    transition: width .3s ease;
+    animation: flow 1.6s linear infinite;
+  }
+  @keyframes flow { to { background-position: -200% 0; } }
+  #barText { font-size: 13px; color: var(--muted); margin: 8px 0 14px; }
+
+  #progressList { max-height: 300px; overflow-y: auto; border: 1px solid var(--border); border-radius: 12px; background: var(--dz-bg); }
+  .row {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 14px; font-size: 13px;
+    border-bottom: 1px solid var(--border);
+    transition: background .15s;
+  }
+  .row:last-child { border-bottom: none; }
+  .row:hover { background: var(--hover); }
+  .row .tag {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; border-radius: 50%;
+    font-size: 11px; font-weight: 800; color: #fff; flex-shrink: 0;
+  }
+  .row.ok .tag { background: var(--ok); box-shadow: 0 4px 10px -4px var(--ok); }
+  .row.fail .tag { background: var(--fail); box-shadow: 0 4px 10px -4px var(--fail); }
+  .row.placeholder .tag { background: var(--warn); box-shadow: 0 4px 10px -4px var(--warn); }
+  .row .citekey { font-family: var(--font-mono); font-weight: 600; color: var(--text); }
+  .row .meta { color: var(--muted); font-size: 12px; }
+  .row .warns { color: var(--warn); margin-top: 3px; white-space: pre-wrap; font-size: 12px; }
+
+  #outputWrap { display: none; }
+  .out-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+  .out-title { font-size: 14px; font-weight: 700; }
+  #output {
+    width: 100%; height: 320px;
+    font-family: var(--font-mono); font-size: 12.5px; line-height: 1.65;
+    border: 1px solid var(--border); border-radius: 12px;
+    padding: 14px; resize: vertical;
+    background: var(--code-bg); color: var(--text);
+    transition: border-color .2s, box-shadow .2s;
+  }
+  #output:focus { outline: none; border-color: var(--accent-1); box-shadow: 0 0 0 3px rgba(99, 102, 241, .15); }
+
+  .status-err {
+    color: var(--fail); margin-top: 14px; font-size: 13.5px;
+    border: 1px solid rgba(239, 68, 68, .25);
+    border-left: 4px solid var(--fail);
+    background: rgba(239, 68, 68, .07);
+    padding: 10px 14px; border-radius: 10px;
+  }
+  .status-err:empty { display: none; }
+</style>
+</head>
+<body>
+<div class="bg-deco" aria-hidden="true">
+  <span class="blob blob-1"></span>
+  <span class="blob blob-2"></span>
+  <span class="blob blob-3"></span>
+</div>
+<div class="container">
+  <header class="hero">
+    <div class="hero-head">
+      <div class="logo">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path>
+          <path d="M14 3v5h5"></path>
+          <path d="M9 13h6M9 17h4"></path>
+        </svg>
+      </div>
+      <h1>BibTeX 获取工具 <span class="chip-accent">纯前端</span></h1>
+    </div>
+    <p class="sub">根据 DOI / ISBN 自动生成 BibTeX · DOI 走 doi.org · ISBN 走 CrossRef</p>
+  </header>
+
+  <section class="card">
+    <div id="dropzone">
+      <svg class="dz-icon" width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 16.2A5 5 0 0 1 6.5 7.1a6.5 6.5 0 0 1 12.6 1.2A4.2 4.2 0 0 1 19 16.6"></path>
+        <path d="M12 12v8"></path>
+        <path d="M8.5 15.5 12 12l3.5 3.5"></path>
+      </svg>
+      <div class="dz-text">拖拽 .bib 文件到这里，或点击选择文件</div>
+      <small>从 Zotero / Better BibTeX 导出的 reference.bib</small>
+    </div>
+    <input type="file" id="file" accept=".bib,.txt,text/plain" hidden>
+
+    <div id="preview">
+      <span class="stat dots">共 <b id="statCount">0</b> 条</span>
+      <span class="stat dots doi">DOI <b id="statDoi">0</b> 条</span>
+      <span class="stat dots isbn">ISBN <b id="statIsbn">0</b> 条</span>
+    </div>
+
+    <details class="settings" id="settings" open>
+      <summary>
+        <span>处理参数</span>
+        <span class="settings-state" id="settingsState"></span>
+        <svg class="settings-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"></path></svg>
+      </summary>
+      <div class="settings-grid" id="settingsBody">
+        <section class="settings-group" aria-labelledby="runGroupTitle">
+          <div class="settings-group-head">
+            <h2 class="settings-group-title" id="runGroupTitle">运行调试</h2>
+            <span class="settings-group-hint">网络、并发、重试</span>
+          </div>
+          <div class="preset-row" id="presetRow" role="group" aria-label="运行预设">
+            <button type="button" class="preset-btn" data-preset="stable">稳健</button>
+            <button type="button" class="preset-btn" data-preset="balanced">平衡</button>
+            <button type="button" class="preset-btn" data-preset="fast">极速</button>
+          </div>
+          <div id="runParams"></div>
+        </section>
+        <section class="settings-group" aria-labelledby="contentGroupTitle">
+          <div class="settings-group-head">
+            <h2 class="settings-group-title" id="contentGroupTitle">内容处理</h2>
+            <span class="settings-group-hint">输出 BibTeX 的方式</span>
+          </div>
+          <div id="contentParams"></div>
+        </section>
+      </div>
+    </details>
+
+    <button id="startBtn" class="btn btn-primary" disabled>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.5v13a1 1 0 0 0 1.53.85l10-6.5a1 1 0 0 0 0-1.7l-10-6.5A1 1 0 0 0 8 5.5Z"></path></svg>
+      开始处理
+    </button>
+  </section>
+
+  <section id="progressWrap" class="card">
+    <div id="barOuter"><div id="bar"></div></div>
+    <div id="barText"></div>
+    <div id="progressList"></div>
+  </section>
+
+  <section id="outputWrap" class="card">
+    <div class="out-head">
+      <span class="out-title">处理结果</span>
+      <button id="downloadBtn" class="btn btn-success" disabled>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 4v10"></path>
+          <path d="m7 10 5 5 5-5"></path>
+          <path d="M5 19h14"></path>
+        </svg>
+        下载 .bib
+      </button>
+    </div>
+    <textarea id="output" spellcheck="false" placeholder="处理结果将在这里显示，可编辑后下载…"></textarea>
+  </section>
+
+  <div id="errBox" class="status-err"></div>
+
+  <footer class="foot">纯前端运行 · 无后端 · 数据来源 doi.org / CrossRef</footer>
+</div>
+
+<script id="core">
+// ========== 纯函数核心（与 get_bibtex_by_doi_or_isbn.py 逻辑一致） ==========
+
+const MONTH_MAP = {
+  january: "jan", february: "feb", march: "mar", april: "apr",
+  may: "may", june: "jun", july: "jul", august: "aug",
+  september: "sep", october: "oct", november: "nov", december: "dec"
+};
+const NUM_TO_MONTH = { 1: "jan", 2: "feb", 3: "mar", 4: "apr", 5: "may", 6: "jun", 7: "jul", 8: "aug", 9: "sep", 10: "oct", 11: "nov", 12: "dec" };
+const CONFERENCE_ABBR = {
+  infocom: "IEEE INFOCOM",
+  "conference on computer communications": "IEEE INFOCOM",
+  mobihoc: "ACM MobiHoc",
+  "mobile networks and mobile computing": "ACM MobiHoc",
+  cdc: "IEEE CDC",
+  "ieee conference on decision and control": "IEEE CDC",
+  isit: "IEEE ISIT",
+  "international symposium on information theory": "IEEE ISIT",
+  sigcomm: "ACM SIGCOMM",
+  icc: "IEEE ICC",
+  globecom: "IEEE GLOBECOM"
+};
+
+// ========== 可调参数（默认值 / 预设 / UI 描述） ==========
+
+const DEFAULT_CONFIG = {
+  run: {
+    concurrency: 4,
+    throttleMs: 200,
+    timeoutMs: 20000,
+    maxAttempts: 4
+  },
+  content: {
+    isbnPreference: "book",
+    normalizeMonth: true,
+    stripDoiIsbn: true,
+    convertInproceedings: true,
+    warnYearMismatch: true
+  }
+};
+
+const RUN_PRESETS = {
+  stable:   { concurrency: 2, throttleMs: 500, timeoutMs: 30000, maxAttempts: 6 },
+  balanced: { concurrency: 4, throttleMs: 200, timeoutMs: 20000, maxAttempts: 4 },
+  fast:     { concurrency: 6, throttleMs: 0,   timeoutMs: 15000, maxAttempts: 3 }
+};
+
+// ISBN -> CrossRef 多条结果时的类型排序偏好
+const ISBN_PREF_LISTS = {
+  book: ["book", "monograph", "edited-book", "reference-book"],
+  chapter: ["book-chapter", "proceedings-article", "reference-entry"],
+  any: ["book", "monograph", "edited-book", "reference-book", "reference-entry", "book-chapter", "proceedings-article", "journal-article"]
+};
+
+const PARAM_SCHEMA = {
+  run: [
+    { id: "concurrency", label: "并发数", type: "segmented",
+      options: [1, 2, 4, 6, 8], hint: "越高越快，也越容易被限流",
+      detail: "同时进行的请求数量。越高整体越快，但同一域名下浏览器连接数有限（通常约 6），并发过高容易触发 429 限流。" },
+    { id: "throttleMs", label: "每条间隔", type: "range",
+      min: 0, max: 1000, step: 50,
+      format: function (v) { return v + "ms"; },
+      hint: "每条处理完后的等待时间",
+      detail: "每条记录处理完成后的额外等待时间，用于错峰请求。调大更稳，但整体更慢。" },
+    { id: "timeoutMs", label: "请求超时", type: "range",
+      min: 5000, max: 60000, step: 5000,
+      format: function (v) { return (v / 1000) + "s"; },
+      hint: "单次请求的最长等待",
+      detail: "单次 HTTP 请求的最长等待时间。超时不会重试，直接按失败处理；网络较慢时可以调大。" },
+    { id: "maxAttempts", label: "最大重试", type: "segmented",
+      options: [1, 2, 3, 4, 6], hint: "超时和 404 不重试",
+      detail: "仅对 429、5xx 和网络异常自动重试，退避时间为 1s、2s、3s…；超时和 404 不重试，耗尽次数后返回失败。" }
+  ],
+  content: [
+    { id: "isbnPreference", label: "ISBN 记录偏好", type: "segmented",
+      options: [
+        { value: "book", label: "优先书籍" },
+        { value: "chapter", label: "优先章节" },
+        { value: "any", label: "原逻辑" }
+      ],
+      hint: "仅影响 CrossRef 多条结果的排序",
+      detail: "CrossRef 按 ISBN 最多返回 10 条记录，这里只决定取哪一条。优先书籍：book/monograph 等排最前；优先章节：book-chapter/proceedings-article 等排最前；原逻辑：沿用旧版顺序（书籍类优先 → 参考条目 → 章节 → 会议论文 → 期刊论文）。没有命中类型时仍会兜底取排序后的第一条。" },
+    { id: "normalizeMonth", label: "月份规范化", type: "toggle", hint: "January → jan",
+      detail: "把 January、Jan.、1 这类月份写法统一成 jan 三字母缩写。" },
+    { id: "stripDoiIsbn", label: "移除 doi/isbn/url", type: "toggle", hint: "输出中不保留这些字段",
+      detail: "输出 BibTeX 时移除 doi、isbn、url 字段，避免与原条目重复。关闭后保留获取到的原始字段。" },
+    { id: "convertInproceedings", label: "会议条目转 article", type: "toggle", hint: "inproceedings → @article",
+      detail: "把 @inproceedings 精简为 @article，并用内置会议表生成 IEEE INFOCOM、ACM SIGCOMM 等简写；缺少 title 或 booktitle 时保持原样。" },
+    { id: "warnYearMismatch", label: "年份不一致警告", type: "toggle", hint: "citekey 与 year 字段不一致时提示",
+      detail: "当 year 字段与 citekey 中的年份不一致，或缺少 year 字段时给出警告，不会自动修改内容。" }
+  ]
+};
+
+function escapeRegExp(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function extractEntries(text) {
+  const entries = [];
+  const starts = [];
+  const re = /^[ \t]*@(\w+)[ \t]*\{/gm;
+  let m;
+  while ((m = re.exec(text)) !== null) starts.push(m.index);
+  for (let i = 0; i < starts.length; i++) {
+    const end = i + 1 < starts.length ? starts[i + 1] : text.length;
+    const block = text.slice(starts[i], end);
+    const cm = block.match(/^\s*@\w+\s*\{([^,]+)/);
+    if (!cm) continue;
+    const citekey = cm[1].trim();
+    const doiMatch = block.match(/doi\s*=\s*(?:\{([^}]+)\}|"([^"]+)"|([^,\s}]+))/i);
+    if (doiMatch) {
+      const v = doiMatch[1] || doiMatch[2] || doiMatch[3];
+      entries.push({ citekey, type: "doi", identifier: v.trim() });
+    } else {
+      const isbnMatch = block.match(/isbn\s*=\s*(?:\{([^}]+)\}|"([^"]+)"|([^,\s}]+))/i);
+      if (isbnMatch) {
+        const v = isbnMatch[1] || isbnMatch[2] || isbnMatch[3];
+        entries.push({ citekey, type: "isbn", identifier: v.trim() });
+      }
+    }
+  }
+  return entries;
+}
+
+function extractField(bib, name) {
+  const mm = bib.match(new RegExp("\\b" + escapeRegExp(name) + "\\s*=\\s*\\{", "i"));
+  if (!mm) return null;
+  const start = mm.index + mm[0].length - 1;
+  let depth = 0;
+  for (let i = start; i < bib.length; i++) {
+    const ch = bib[i];
+    if (ch === "{") depth++;
+    else if (ch === "}") {
+      depth--;
+      if (depth === 0) {
+        return bib.slice(start + 1, i).replace(/\s+/g, " ").trim();
+      }
+    }
+  }
+  return null;
+}
+
+function extractYearFromText(text) {
+  if (!text) return "";
+  const mm = String(text).match(/(?:19|20)\d{2}\b/);
+  return mm ? mm[0] : "";
+}
+
+function replaceCitekey(bib, key) {
+  return bib.replace(/^(@\w+\{)[^,]+/, "$1" + key);
+}
+
+function normalizeMonth(bib) {
+  const pattern = /month\s*=\s*\{([^}]+)\}|\bmonth\s*=\s*"([^"]+)"|\bmonth\s*=\s*(\w+)/gi;
+  return bib.replace(pattern, function (full, g1, g2, g3) {
+    let raw = (g1 || g2 || g3 || "").trim();
+    raw = raw.replace(/^['"{]+/, "").replace(/['"}]+$/, "").toLowerCase().replace(/\.$/, "");
+    if (MONTH_MAP[raw]) return "month = {" + MONTH_MAP[raw] + "}";
+    const candidates = Object.keys(MONTH_MAP).filter(function (k) { return k.startsWith(raw); });
+    if (candidates.length === 1) return "month = {" + MONTH_MAP[candidates[0]] + "}";
+    if (candidates.length > 1) return full;
+    if (/^\d+$/.test(raw)) {
+      const num = parseInt(raw, 10);
+      if (num >= 1 && num <= 12) return "month = {" + NUM_TO_MONTH[num] + "}";
+    }
+    return full;
+  });
+}
+
+function stripDoiIsbn(bib) {
+  bib = bib.replace(/,\s*(doi|isbn|url)\s*=\s*\{[^}]*\}/gi, "");
+  bib = bib.replace(/\s*(doi|isbn|url)\s*=\s*\{[^}]*\},?\s*/gi, "");
+  return bib;
+}
+
+function extractConferenceAbbr(booktitle) {
+  const text = booktitle.toLowerCase();
+  const keys = Object.keys(CONFERENCE_ABBR).sort(function (a, b) { return b.length - a.length; });
+  for (let i = 0; i < keys.length; i++) {
+    const key = keys[i];
+    const re = new RegExp("\\b" + escapeRegExp(key) + "\\b");
+    if (re.test(text)) return CONFERENCE_ABBR[key];
+  }
+  const generic = new Set(["ieee", "acm", "usenix", "ifip"]);
+  const acs = booktitle.match(/\b[A-Z][A-Z0-9&\-+.]{1,}\b/g) || [];
+  for (let i = 0; i < acs.length; i++) {
+    const k = acs[i].toLowerCase();
+    if (generic.has(k)) continue;
+    if (CONFERENCE_ABBR[k]) return CONFERENCE_ABBR[k];
+  }
+  return booktitle.trim();
+}
+
+function convertInproceedingsToArticle(bib, warnings) {
+  if (!/@\s*inproceedings\s*\{/i.test(bib)) return bib;
+  const cm = bib.match(/@\s*inproceedings\s*\{([^,]+)/i);
+  const citekey = cm ? cm[1].trim() : "";
+  const author = extractField(bib, "author");
+  const title = extractField(bib, "title");
+  const booktitle = extractField(bib, "booktitle");
+  let year = extractField(bib, "year");
+  if (!year) {
+    warnings.push("  [警告] inproceedings 缺少 year，通过其他字段匹配获取，注意检查: " + citekey);
+    year = extractYearFromText(booktitle);
+  }
+  if (!year) year = extractYearFromText(citekey);
+  if (!(title && booktitle)) {
+    warnings.push("  [警告] inproceedings 缺少 title/booktitle，保持原样: " + citekey);
+    return bib;
+  }
+  const abbr = extractConferenceAbbr(booktitle);
+  const lines = ["@article{" + citekey + ","];
+  if (author) lines.push("  author    = {" + author + "},");
+  if (title) lines.push("  title     = {" + title + "},");
+  lines.push("  journal   = {" + abbr + "},");
+  if (year) lines.push("  year      = {" + year + "},");
+  lines.push("}");
+  return lines.join("\n") + "\n";
+}
+
+function warnYearMismatch(bib, warnings) {
+  const cm = bib.match(/@\w+\{([^,]+)/);
+  if (!cm) return bib;
+  const citekey = cm[1].trim();
+  const citekeyYear = extractYearFromText(citekey);
+  if (!citekeyYear) return bib;
+  const ym = bib.match(/year\s*=\s*\{([^}]+)\}/i);
+  if (ym) {
+    const cur = ym[1].trim();
+    if (cur !== citekeyYear) warnings.push("  [警告] year 不一致: 字段=" + cur + ", citekey=" + citekeyYear + " (" + citekey + ")，请手动检查");
+  } else {
+    warnings.push("  [警告] 缺少 year 字段，citekey 年份为 " + citekeyYear + " (" + citekey + ")，请手动检查");
+  }
+  return bib;
+}
+
+// ========== 远程获取 ==========
+
+const RETRY_BACKOFF_BASE_MS = 1000;
+
+// 429/5xx/网络异常自动重试（退避 1s/2s/3s）；超时与 404 不重试；耗尽返回 null
+async function fetchWithRetry(url, options, runCfg) {
+  const maxAttempts = runCfg.maxAttempts;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(function () { ctrl.abort(); }, runCfg.timeoutMs);
+    try {
+      const resp = await fetch(url, Object.assign({}, options, { signal: ctrl.signal }));
+      if (resp.status === 429 || resp.status >= 500) {
+        await resp.text().catch(function () {});
+      } else {
+        return resp;
+      }
+    } catch (e) {
+      if (e && e.name === "AbortError") return null;
+    } finally {
+      clearTimeout(timer);
+    }
+    await sleep(RETRY_BACKOFF_BASE_MS * attempt);
+  }
+  return null;
+}
+
+async function fetchDoiBib(doi, runCfg) {
+  try {
+    const resp = await fetchWithRetry("https://doi.org/" + encodeURIComponent(doi), {
+      headers: { Accept: "application/x-bibtex" }
+    }, runCfg);
+    if (!resp || !resp.ok) return null;
+    const text = await resp.text();
+    return text.trim().startsWith("@") ? text.trim() : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+async function resolveIsbnToDoi(isbn, runCfg, contentCfg) {
+  const clean = String(isbn).replace(/[^0-9X]/gi, "").toUpperCase();
+  if (!clean) return null;
+  const url = "https://api.crossref.org/works?filter=isbn:" + encodeURIComponent(clean) +
+              "&rows=10&select=DOI,title,type";
+  try {
+    const resp = await fetchWithRetry(url, {}, runCfg);
+    if (!resp || !resp.ok) return null;
+    const data = await resp.json();
+    const items = (data.message && data.message.items) || [];
+    if (!items.length) return null;
+    // 按用户偏好排序；未命中的类型排在最后，仍会作为兜底
+    const typePref = ISBN_PREF_LISTS[contentCfg.isbnPreference] || ISBN_PREF_LISTS.any;
+    items.sort(function (a, b) {
+      const ia = typePref.indexOf(a.type), ib = typePref.indexOf(b.type);
+      return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+    });
+    return items[0].DOI;
+  } catch (e) {
+    return null;
+  }
+}
+
+// 处理单条，返回 { status: 'ok'|'fail'|'placeholder', bibtex, warnings }
+async function processEntry(entry, runCfg, contentCfg) {
+  const warnings = [];
+  if (entry.type === "doi") {
+    let bib = await fetchDoiBib(entry.identifier, runCfg);
+    if (!bib) return { status: "fail", bibtex: null, warnings };
+    bib = replaceCitekey(bib, entry.citekey);
+    if (contentCfg.normalizeMonth) bib = normalizeMonth(bib);
+    if (contentCfg.stripDoiIsbn) bib = stripDoiIsbn(bib);
+    if (contentCfg.convertInproceedings) bib = convertInproceedingsToArticle(bib, warnings);
+    if (contentCfg.warnYearMismatch) bib = warnYearMismatch(bib, warnings);
+    return { status: "ok", bibtex: bib, warnings };
+  }
+  const doi = await resolveIsbnToDoi(entry.identifier, runCfg, contentCfg);
+  let bib = doi ? await fetchDoiBib(doi, runCfg) : null;
+  if (bib) {
+    bib = replaceCitekey(bib, entry.citekey);
+    if (contentCfg.normalizeMonth) bib = normalizeMonth(bib);
+    if (contentCfg.stripDoiIsbn) bib = stripDoiIsbn(bib);
+    if (contentCfg.warnYearMismatch) bib = warnYearMismatch(bib, warnings);
+    return { status: "ok", bibtex: bib, warnings };
+  }
+  warnings.push("  [警告] ISBN " + entry.identifier + " 未在 CrossRef 找到，输出占位条目，请手动补充");
+  const ph = "@book{" + entry.citekey + ",\n  title     = {请手动补充书名},\n  note      = {ISBN " + entry.identifier + " 未在 CrossRef 找到},\n}";
+  return { status: "placeholder", bibtex: ph, warnings };
+}
+
+function sleep(ms) {
+  return new Promise(function (resolve) { setTimeout(resolve, ms); });
+}
+
+// 固定并发度的 worker 池，结果按下标存储以保证输入顺序
+async function runAll(entries, onUpdate, cfg) {
+  const runCfg = cfg.run;
+  const contentCfg = cfg.content;
+  const n = entries.length;
+  const results = new Array(n).fill(null);
+  let next = 0;
+  let doneCount = 0;
+
+  async function worker() {
+    while (true) {
+      const idx = next++;
+      if (idx >= n) return;
+      const e = entries[idx];
+      const r = await processEntry(e, runCfg, contentCfg);
+      results[idx] = {
+        citekey: e.citekey,
+        type: e.type,
+        identifier: e.identifier,
+        status: r.status,
+        bibtex: r.bibtex,
+        warnings: r.warnings
+      };
+      doneCount++;
+      if (runCfg.throttleMs > 0) await sleep(runCfg.throttleMs); // 错峰小间隔，避免瞬时打爆
+      onUpdate(results, doneCount, n);
+    }
+  }
+
+  await Promise.all(Array.from({ length: Math.min(runCfg.concurrency, n) }, worker));
+  return results;
+}
+</script>
+
+<script id="ui">
+// ========== 界面逻辑 ==========
+(function () {
+  "use strict";
+
+  const dropzone = document.getElementById("dropzone");
+  const fileInput = document.getElementById("file");
+  const preview = document.getElementById("preview");
+  const startBtn = document.getElementById("startBtn");
+  const progressWrap = document.getElementById("progressWrap");
+  const bar = document.getElementById("bar");
+  const barText = document.getElementById("barText");
+  const progressList = document.getElementById("progressList");
+  const outputWrap = document.getElementById("outputWrap");
+  const output = document.getElementById("output");
+  const downloadBtn = document.getElementById("downloadBtn");
+  const errBox = document.getElementById("errBox");
+
+  let bibText = "";
+  let running = false;
+
+  // ---------- 可调参数面板 ----------
+
+  const STORAGE_KEY = "bibtex-tool-content-v1";
+  const PRESET_LABELS = { stable: "稳健", balanced: "平衡", fast: "极速" };
+
+  const settingsEl = document.getElementById("settings");
+  const settingsBody = document.getElementById("settingsBody");
+  const settingsState = document.getElementById("settingsState");
+  const presetRow = document.getElementById("presetRow");
+  const runParams = document.getElementById("runParams");
+  const contentParams = document.getElementById("contentParams");
+
+  const paramState = {
+    run: Object.assign({}, DEFAULT_CONFIG.run),
+    content: Object.assign({}, DEFAULT_CONFIG.content)
+  };
+  const controlRefs = {};
+
+  function optionValue(opt) { return (opt && typeof opt === "object") ? opt.value : opt; }
+  function optionLabel(opt) { return (opt && typeof opt === "object") ? opt.label : String(opt); }
+
+  function loadSavedContent() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const saved = JSON.parse(raw);
+      PARAM_SCHEMA.content.forEach(function (p) {
+        if (Object.prototype.hasOwnProperty.call(saved, p.id)) {
+          paramState.content[p.id] = saved[p.id];
+        }
+      });
+    } catch (e) { /* localStorage 不可用时忽略 */ }
+  }
+
+  function saveContent() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(paramState.content));
+    } catch (e) { /* localStorage 不可用时忽略 */ }
+  }
+
+  function buildParamRow(p, scope) {
+    const row = document.createElement("div");
+    row.className = "param-row";
+
+    const label = document.createElement("div");
+    label.className = "param-label";
+
+    const name = document.createElement("span");
+    name.className = "param-name";
+    const nameText = document.createElement("span");
+    nameText.textContent = p.label;
+    name.appendChild(nameText);
+    if (p.detail) {
+      const tipId = "tip-" + scope + "-" + p.id;
+      const infoBtn = document.createElement("button");
+      infoBtn.type = "button";
+      infoBtn.className = "info-btn";
+      infoBtn.setAttribute("aria-label", p.label + " 详细说明");
+      infoBtn.setAttribute("aria-describedby", tipId);
+      infoBtn.textContent = "?";
+      const tip = document.createElement("span");
+      tip.className = "info-tip";
+      tip.id = tipId;
+      tip.setAttribute("role", "tooltip");
+      tip.textContent = p.detail;
+      infoBtn.addEventListener("click", function (e) {
+        e.stopPropagation();
+        const wasOpen = name.classList.contains("open");
+        closeInfoTips();
+        if (!wasOpen) name.classList.add("open");
+      });
+      name.appendChild(infoBtn);
+      name.appendChild(tip);
+    }
+    label.appendChild(name);
+    if (p.hint) {
+      const hint = document.createElement("small");
+      hint.textContent = p.hint;
+      label.appendChild(hint);
+    }
+    row.appendChild(label);
+
+    const key = scope + "." + p.id;
+
+    if (p.type === "segmented") {
+      const seg = document.createElement("div");
+      seg.className = "segmented";
+      seg.id = "param-" + p.id;
+      seg.setAttribute("role", "group");
+      seg.setAttribute("aria-label", p.label);
+      p.options.forEach(function (opt) {
+        const value = optionValue(opt);
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "seg-btn";
+        btn.dataset.value = String(value);
+        btn.textContent = optionLabel(opt);
+        btn.addEventListener("click", function () {
+          paramState[scope][p.id] = value;
+          syncSettings();
+          onConfigChanged(scope);
+        });
+        seg.appendChild(btn);
+      });
+      row.appendChild(seg);
+      controlRefs[key] = { type: "segmented", el: seg };
+    } else if (p.type === "range") {
+      const wrap = document.createElement("div");
+      wrap.className = "range-row";
+      const input = document.createElement("input");
+      input.type = "range";
+      input.id = "param-" + p.id;
+      input.min = String(p.min);
+      input.max = String(p.max);
+      input.step = String(p.step);
+      const val = document.createElement("span");
+      val.className = "range-val";
+      input.addEventListener("input", function () {
+        const v = Number(input.value);
+        paramState[scope][p.id] = v;
+        val.textContent = p.format ? p.format(v) : String(v);
+        updateSettingsSummary();
+        onConfigChanged(scope);
+      });
+      wrap.appendChild(input);
+      wrap.appendChild(val);
+      row.appendChild(wrap);
+      controlRefs[key] = { type: "range", input: input, val: val, schema: p };
+    } else if (p.type === "toggle") {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "toggle-btn";
+      btn.id = "param-" + p.id;
+      btn.setAttribute("role", "switch");
+      const dot = document.createElement("span");
+      dot.className = "dot";
+      const text = document.createElement("span");
+      btn.appendChild(dot);
+      btn.appendChild(text);
+      btn.addEventListener("click", function () {
+        paramState[scope][p.id] = !paramState[scope][p.id];
+        syncSettings();
+        onConfigChanged(scope);
+      });
+      row.appendChild(btn);
+      controlRefs[key] = { type: "toggle", btn: btn, text: text };
+    }
+
+    return row;
+  }
+
+  function syncSettings() {
+    Object.keys(controlRefs).forEach(function (key) {
+      const ref = controlRefs[key];
+      const dotIdx = key.indexOf(".");
+      const scope = key.slice(0, dotIdx);
+      const id = key.slice(dotIdx + 1);
+      const value = paramState[scope][id];
+
+      if (ref.type === "segmented") {
+        const btns = ref.el.querySelectorAll(".seg-btn");
+        for (let i = 0; i < btns.length; i++) {
+          btns[i].classList.toggle("active", btns[i].dataset.value === String(value));
+        }
+      } else if (ref.type === "range") {
+        ref.input.value = String(value);
+        ref.val.textContent = ref.schema.format ? ref.schema.format(value) : String(value);
+      } else if (ref.type === "toggle") {
+        const on = value === true;
+        ref.btn.setAttribute("aria-checked", on ? "true" : "false");
+        ref.text.textContent = on ? "已开启" : "已关闭";
+      }
+    });
+    updatePresetActive();
+    updateSettingsSummary();
+  }
+
+  function closeInfoTips() {
+    const open = settingsBody.querySelectorAll(".param-name.open");
+    for (let i = 0; i < open.length; i++) open[i].classList.remove("open");
+  }
+
+  function matchRunPreset() {
+    let matched = null;
+    Object.keys(RUN_PRESETS).forEach(function (name) {
+      const preset = RUN_PRESETS[name];
+      const same = Object.keys(preset).every(function (k) {
+        return paramState.run[k] === preset[k];
+      });
+      if (same) matched = name;
+    });
+    return matched;
+  }
+
+  function updatePresetActive() {
+    const matched = matchRunPreset();
+    const btns = presetRow.querySelectorAll(".preset-btn");
+    for (let i = 0; i < btns.length; i++) {
+      btns[i].classList.toggle("active", btns[i].dataset.preset === matched);
+    }
+  }
+
+  function updateSettingsSummary() {
+    const matched = matchRunPreset();
+    const label = matched ? PRESET_LABELS[matched] : "自定义";
+    settingsState.textContent = label + " · 并发" + paramState.run.concurrency + " · 间隔" + paramState.run.throttleMs + "ms";
+  }
+
+  function onConfigChanged(scope) {
+    if (scope === "content") saveContent();
+  }
+
+  function renderSettings() {
+    PARAM_SCHEMA.run.forEach(function (p) { runParams.appendChild(buildParamRow(p, "run")); });
+    PARAM_SCHEMA.content.forEach(function (p) { contentParams.appendChild(buildParamRow(p, "content")); });
+
+    document.addEventListener("click", closeInfoTips);
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") closeInfoTips();
+    });
+
+    const presetBtns = presetRow.querySelectorAll(".preset-btn");
+    for (let i = 0; i < presetBtns.length; i++) {
+      presetBtns[i].addEventListener("click", function () {
+        const preset = RUN_PRESETS[presetBtns[i].dataset.preset];
+        if (!preset) return;
+        Object.assign(paramState.run, preset);
+        syncSettings();
+        onConfigChanged("run");
+      });
+    }
+    syncSettings();
+  }
+
+  function setSettingsDisabled(disabled) {
+    settingsEl.classList.toggle("locked", disabled);
+    const els = settingsBody.querySelectorAll("button, input");
+    for (let i = 0; i < els.length; i++) {
+      if (els[i].classList.contains("info-btn")) continue;
+      els[i].disabled = disabled;
+    }
+  }
+
+  function getConfig() {
+    return {
+      run: Object.assign({}, paramState.run),
+      content: Object.assign({}, paramState.content)
+    };
+  }
+
+  loadSavedContent();
+  renderSettings();
+
+  function showErr(msg) { errBox.textContent = msg || ""; }
+
+  function escapeHtml(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function readFile(file) {
+    if (!file || running) return;
+    const reader = new FileReader();
+    reader.onload = function () {
+      bibText = reader.result;
+      parseBib(bibText);
+    };
+    reader.readAsText(file, "utf-8");
+  }
+
+  function parseBib(text) {
+    try {
+      const entries = extractEntries(text);
+      const dois = entries.filter(function (e) { return e.type === "doi"; }).length;
+      const isbns = entries.filter(function (e) { return e.type === "isbn"; }).length;
+      document.getElementById("statCount").textContent = entries.length;
+      document.getElementById("statDoi").textContent = dois;
+      document.getElementById("statIsbn").textContent = isbns;
+      preview.style.display = "block";
+      startBtn.disabled = entries.length === 0;
+      showErr("");
+    } catch (e) {
+      showErr("解析失败: " + e.message);
+    }
+  }
+
+  dropzone.addEventListener("click", function () { fileInput.click(); });
+  fileInput.addEventListener("change", function () { readFile(fileInput.files[0]); });
+  ["dragover", "dragenter"].forEach(function (ev) {
+    dropzone.addEventListener(ev, function (e) {
+      e.preventDefault();
+      dropzone.classList.add("dragover");
+    });
+  });
+  ["dragleave", "drop"].forEach(function (ev) {
+    dropzone.addEventListener(ev, function (e) {
+      e.preventDefault();
+      dropzone.classList.remove("dragover");
+    });
+  });
+  dropzone.addEventListener("drop", function (e) { readFile(e.dataTransfer.files[0]); });
+
+  startBtn.addEventListener("click", async function () {
+    if (running) return;
+    running = true;
+    startBtn.disabled = true;
+    outputWrap.style.display = "none";
+    progressWrap.style.display = "block";
+    progressList.innerHTML = "";
+    bar.style.width = "0%";
+    barText.textContent = "正在处理…";
+    showErr("");
+    setSettingsDisabled(true);
+
+    const cfg = getConfig();
+    const entries = extractEntries(bibText);
+
+    function onUpdate(results, current, total) {
+      const pct = total ? Math.round((current / total) * 100) : 0;
+      bar.style.width = pct + "%";
+      barText.textContent = "处理中 " + current + " / " + total + "（" + pct + "%）";
+      renderRows(results);
+    }
+
+    try {
+      const results = await runAll(entries, onUpdate, cfg);
+      bar.style.width = "100%";
+      barText.textContent = "全部完成";
+      const lines = results
+        .filter(function (r) { return r.status === "ok" || r.status === "placeholder"; })
+        .map(function (r) { return r.bibtex.trim(); });
+      output.value = lines.join("\n\n");
+      outputWrap.style.display = "block";
+      downloadBtn.disabled = false;
+    } catch (e) {
+      showErr("处理出错: " + e.message);
+    } finally {
+      running = false;
+      startBtn.disabled = false;
+      setSettingsDisabled(false);
+    }
+  });
+
+  function renderRows(results) {
+    for (let i = 0; i < results.length; i++) {
+      const r = results[i];
+      if (!r) continue;
+      let div = document.getElementById("row-" + i);
+      if (!div) {
+        div = document.createElement("div");
+        div.id = "row-" + i;
+        // 插入到对应位置，保持输入顺序
+        progressList.insertBefore(div, progressList.children[i] || null);
+      }
+      div.className = "row " + r.status;
+      const tag = r.status === "ok" ? "✓" : (r.status === "placeholder" ? "⚠" : "✗");
+      div.innerHTML =
+        "<span class=\"tag\">" + tag + "</span>" +
+        "<span class=\"citekey\">" + escapeHtml(r.citekey) + "</span>" +
+        " <span class=\"meta\">(" + r.type + ": " + escapeHtml(r.identifier) + ")</span>" +
+        (r.warnings && r.warnings.length
+          ? "<div class=\"warns\">" + r.warnings.map(escapeHtml).join("\n") + "</div>"
+          : "");
+    }
+    progressList.scrollTop = progressList.scrollHeight;
+  }
+
+  downloadBtn.addEventListener("click", function () {
+    const blob = new Blob([output.value], { type: "text/plain;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "fetched_reference.bib";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+  });
+})();
+</script>
+</body>
+</html>
