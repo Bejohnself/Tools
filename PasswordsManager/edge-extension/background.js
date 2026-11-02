@@ -83,6 +83,26 @@ function hasExplicitPort(host) {
   return Boolean(target) && target !== hostnameOf(target);
 }
 
+function isHttpUrl(value) {
+  return /^https?:\/\//i.test(String(value || '').trim());
+}
+
+// iframe / about:blank 弹窗里的登录框：消息里的 location.href 是子 frame 的，
+// 这里换算成顶层页面（或发起方 origin），让凭据仍然按用户实际访问的站点匹配。
+function resolveSiteUrl(message, sender) {
+  const explicitUrl = String(message?.url || message?.payload?.url || '').trim();
+  const frameUrl = String(sender?.url || '').trim();
+  const senderOrigin = String(sender?.origin || '').trim();
+  const tabUrl = String(sender?.tab?.url || '').trim();
+  const isTopFrame = Number(sender?.frameId || 0) === 0;
+
+  const candidates = isTopFrame
+    ? [explicitUrl, frameUrl, senderOrigin, tabUrl]
+    : [tabUrl, senderOrigin, explicitUrl, frameUrl];
+
+  return candidates.find(isHttpUrl) || explicitUrl || '';
+}
+
 function toUnixMs(value) {
   const ts = Date.parse(value || 0);
   return Number.isNaN(ts) ? 0 : ts;
@@ -1162,11 +1182,66 @@ async function addCredentialManual(payload) {
 }
 
 
+// 扩展安装/更新/重新加载后，已打开页面里的旧 content script 会失效，
+// 这里主动重置守卫并重新注入，避免用户必须刷新页面才能继续自动填充。
+async function reinitializeContentScripts() {
+  let tabs = [];
+  try {
+    tabs = await chrome.tabs.query({});
+  } catch (error) {
+    return;
+  }
+
+  for (const tab of tabs) {
+    if (!tab?.id || tab.discarded || (tab.status && tab.status !== 'complete') || !isHttpUrl(tab.url || '')) {
+      continue;
+    }
+
+    // 顶层脚本还活着就不动它，避免重复绑定事件
+    const alive = await chrome.tabs
+      .sendMessage(tab.id, { type: 'PM_EXT_PING' }, { frameId: 0 })
+      .catch(() => null);
+    if (alive?.ok) {
+      continue;
+    }
+
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id, allFrames: true },
+        func: () => {
+          window.__PM_EXT_CONTENT_INITED__ = false;
+        }
+      });
+    } catch (error) {
+      // 受限 frame（沙箱/不支持注入的 URL）忽略
+    }
+
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id, allFrames: true },
+        files: ['content.js']
+      });
+    } catch (error) {
+      // 受限页面（chrome://、扩展页等）忽略
+    }
+  }
+
+  debugLog('reinitializeContentScripts', { tabs: tabs.length });
+}
+
 chrome.runtime.onInstalled.addListener(() => {
   inMemoryMasterPassword = null;
+  reinitializeContentScripts();
+});
+
+chrome.runtime.onStartup.addListener(() => {
+  reinitializeContentScripts();
 });
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  const siteUrl = resolveSiteUrl(message, _sender);
+  const withSiteUrl = (payload) => ({ ...(payload || {}), url: siteUrl || payload?.url || '' });
+
   (async () => {
     switch (message?.type) {
       case 'GET_STATUS':
@@ -1185,17 +1260,17 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         break;
       case 'GET_CREDENTIALS_FOR_URL':
 
-        sendResponse(await getCredentialsForUrl(message.url || ''));
+        sendResponse(await getCredentialsForUrl(siteUrl || message.url || ''));
         break;
       case 'SEARCH_CREDENTIALS':
-        sendResponse(await searchCredentials(message.payload || {}));
+        sendResponse(await searchCredentials(withSiteUrl(message.payload)));
         break;
       case 'CREDENTIAL_USED':
-        sendResponse(await markCredentialUsed(message.payload || {}));
+        sendResponse(await markCredentialUsed(withSiteUrl(message.payload)));
         break;
 
       case 'FORM_SUBMITTED':
-        sendResponse(await saveSubmittedCredential(message.payload || {}));
+        sendResponse(await saveSubmittedCredential(withSiteUrl(message.payload)));
         break;
       case 'INIT_FROM_WEB_APP':
         sendResponse(await initializeFromWebApp(message.payload || {}));

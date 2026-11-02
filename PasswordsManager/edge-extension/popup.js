@@ -228,7 +228,7 @@ function extractSalt(authRaw) {
 }
 
 async function ensureContentScriptReady(tabId) {
-  const firstProbe = await chrome.tabs.sendMessage(tabId, { type: 'EXPORT_WEBAPP_DATA' }).catch(() => null);
+  const firstProbe = await chrome.tabs.sendMessage(tabId, { type: 'EXPORT_WEBAPP_DATA' }, { frameId: 0 }).catch(() => null);
   if (firstProbe?.ok) {
     return { ok: true, data: firstProbe, injected: false };
   }
@@ -243,7 +243,7 @@ async function ensureContentScriptReady(tabId) {
     return { ok: false, message: `注入脚本失败：${String(error?.message || error)}` };
   }
 
-  const secondProbe = await chrome.tabs.sendMessage(tabId, { type: 'EXPORT_WEBAPP_DATA' }).catch(() => null);
+  const secondProbe = await chrome.tabs.sendMessage(tabId, { type: 'EXPORT_WEBAPP_DATA' }, { frameId: 0 }).catch(() => null);
   if (!secondProbe?.ok) {
     return { ok: false, message: '脚本已注入，但页面仍未响应（请确认当前页是密码管理器网页）' };
   }
@@ -795,6 +795,7 @@ if (openWebAppBtn) {
     await chrome.tabs.create({ url: WEB_APP_URL });
   });
 }
+
 if (rememberDeviceEl) {
   // 持久化“记住设备”勾选偏好，便于下次打开弹窗沿用用户选择。
   rememberDeviceEl.addEventListener('change', async () => {

@@ -48,6 +48,11 @@ function isUsableInput(input) {
     return false;
   }
 
+  // 祖先 display:none 时，input 自身的 computed display 仍可能是可见值，这里用布局信息兜底
+  if (typeof input.getClientRects === 'function' && input.getClientRects().length === 0) {
+    return false;
+  }
+
   return true;
 }
 
@@ -208,7 +213,7 @@ async function trySyncMasterRotationIfNeeded() {
 }
 
 function bindMasterPasswordSync() {
-  if (!isPasswordManagerWebPage()) {
+  if (window.top !== window.self || !isPasswordManagerWebPage()) {
     return;
   }
 
@@ -305,7 +310,7 @@ async function trySyncLoginFromWebIfNeeded() {
 }
 
 function bindWebLoginSync() {
-  if (!isPasswordManagerWebApp()) {
+  if (window.top !== window.self || !isPasswordManagerWebApp()) {
     return;
   }
 
@@ -380,6 +385,35 @@ function showToast(text, isError = false) {
   }, 1200);
 }
 
+function hasNearbyPasswordInput(input) {
+  const containerHasPassword = (root) => {
+    if (!root?.querySelectorAll) {
+      return false;
+    }
+    for (const candidate of root.querySelectorAll('input[type="password"]')) {
+      if (isUsableInput(candidate)) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  if (containerHasPassword(input.form)) {
+    return true;
+  }
+
+  // 账号框和密码框可能分在相邻容器里（例如 login-form > div > input），往上找几层
+  let container = input.parentElement;
+  for (let depth = 0; container && depth < 4; depth += 1) {
+    if (containerHasPassword(container)) {
+      return true;
+    }
+    container = container.parentElement;
+  }
+
+  return false;
+}
+
 function isLikelyLoginInput(input) {
   const type = (input.type || '').toLowerCase();
   if (type === 'password' || type === 'email') {
@@ -391,7 +425,16 @@ function isLikelyLoginInput(input) {
   }
 
   const marker = `${input.name || ''} ${input.id || ''} ${input.placeholder || ''}`;
-  return /user|email|account|login|name|phone|pass|pwd/i.test(marker);
+  if (/user|email|account|login|name|phone|pass|pwd/i.test(marker)) {
+    return true;
+  }
+
+  // 兜底：字段命名看不出来时，只要同一表单/邻近容器里有可见密码框，也算登录框
+  if (['text', 'tel', 'email', ''].includes(type)) {
+    return hasNearbyPasswordInput(input);
+  }
+
+  return false;
 }
 
 function getSelectedCredential() {
@@ -445,16 +488,17 @@ function ensureQuickPanel() {
   copyPwdBtn.textContent = '复制密码';
   copyPwdBtn.dataset.action = 'copy-password';
 
-  deleteBtn.textContent = '删除该账号';
+  deleteBtn.textContent = '删除';
   deleteBtn.dataset.action = 'delete-credential';
 
 
   Object.assign(panel.style, {
-    position: 'absolute',
+    position: 'fixed',
     zIndex: '2147483647',
-    minWidth: '220px',
+    boxSizing: 'border-box',
+    minWidth: '200px',
     maxWidth: '280px',
-    padding: '10px',
+    padding: '8px',
     borderRadius: '10px',
     border: '1px solid rgba(148,163,184,0.35)',
     background: 'rgba(2, 6, 23, 0.96)',
@@ -462,56 +506,84 @@ function ensureQuickPanel() {
     boxShadow: '0 8px 24px rgba(2,6,23,.45)',
     fontFamily: 'system-ui, -apple-system, Segoe UI, Roboto, sans-serif',
     fontSize: '12px',
+    overflowY: 'auto',
     display: 'none'
   });
 
   Object.assign(title.style, {
     fontWeight: '600',
-    marginBottom: '4px'
+    fontSize: '12px',
+    marginBottom: '2px'
   });
 
   Object.assign(sub.style, {
     color: '#94a3b8',
-    marginBottom: '8px',
-    wordBreak: 'break-all'
+    fontSize: '11px',
+    marginBottom: '6px',
+    overflow: 'hidden',
+    whiteSpace: 'nowrap',
+    textOverflow: 'ellipsis'
   });
 
   Object.assign(picker.style, {
     display: 'block',
     width: '100%',
     border: '1px solid rgba(148,163,184,0.35)',
-    borderRadius: '8px',
-    padding: '7px 8px',
+    borderRadius: '7px',
+    padding: '5px 6px',
+    fontSize: '12px',
     background: 'rgba(15,23,42,0.9)',
-    color: '#e2e8f0',
-    marginBottom: '4px'
+    color: '#e2e8f0'
   });
 
-  for (const btn of [fillBtn, copyUserBtn, copyPwdBtn, deleteBtn]) {
+  Object.assign(fillBtn.style, {
+    display: 'block',
+    width: '100%',
+    border: '0',
+    borderRadius: '7px',
+    padding: '7px 8px',
+    marginTop: '6px',
+    cursor: 'pointer',
+    color: '#ffffff',
+    fontSize: '12px',
+    fontWeight: '600',
+    background: 'rgba(79, 70, 229, 0.95)'
+  });
+
+  const buttonRow = document.createElement('div');
+  Object.assign(buttonRow.style, {
+    display: 'flex',
+    gap: '6px',
+    marginTop: '6px'
+  });
+
+  for (const btn of [copyUserBtn, copyPwdBtn, deleteBtn]) {
     Object.assign(btn.style, {
-      display: 'block',
-      width: '100%',
+      flex: '1',
+      minWidth: '0',
       border: '0',
-      borderRadius: '8px',
-      padding: '7px 8px',
-      marginTop: '6px',
+      borderRadius: '7px',
+      padding: '6px 4px',
       cursor: 'pointer',
       color: '#e2e8f0',
-      background: 'rgba(30,41,59,0.9)',
-      textAlign: 'left'
+      fontSize: '11px',
+      textAlign: 'center',
+      whiteSpace: 'nowrap',
+      background: 'rgba(30,41,59,0.9)'
     });
   }
 
   deleteBtn.style.background = 'rgba(127, 29, 29, 0.92)';
 
+  buttonRow.appendChild(copyUserBtn);
+  buttonRow.appendChild(copyPwdBtn);
+  buttonRow.appendChild(deleteBtn);
 
   panel.appendChild(title);
   panel.appendChild(sub);
   panel.appendChild(picker);
   panel.appendChild(fillBtn);
-  panel.appendChild(copyUserBtn);
-  panel.appendChild(copyPwdBtn);
-  panel.appendChild(deleteBtn);
+  panel.appendChild(buttonRow);
 
 
 
@@ -597,16 +669,36 @@ function updateQuickPanelPosition() {
     return;
   }
 
-  const rect = activeInput.getBoundingClientRect();
-  const panelWidth = 260;
-  const left = Math.min(
-    window.scrollX + rect.left,
-    window.scrollX + Math.max(8, window.innerWidth - panelWidth - 8)
-  );
-  const top = window.scrollY + rect.bottom + 8;
+  const margin = 8;
+  const viewportWidth = Math.max(160, window.innerWidth);
+  const viewportHeight = Math.max(120, window.innerHeight);
+  const availableWidth = Math.max(140, viewportWidth - margin * 2);
 
-  quickPanelEl.style.left = `${left}px`;
-  quickPanelEl.style.top = `${top}px`;
+  quickPanelEl.style.minWidth = `${Math.min(200, availableWidth)}px`;
+  quickPanelEl.style.maxWidth = `${Math.min(280, availableWidth)}px`;
+  quickPanelEl.style.maxHeight = `${Math.max(120, viewportHeight - margin * 2)}px`;
+
+  const panelRect = quickPanelEl.getBoundingClientRect();
+  const panelWidth = panelRect.width || Math.min(280, availableWidth);
+  const panelHeight = panelRect.height || 150;
+  const inputRect = activeInput.getBoundingClientRect();
+
+  let left = inputRect.left;
+  left = Math.min(left, viewportWidth - panelWidth - margin);
+  left = Math.max(margin, left);
+
+  // 默认放在输入框下方；下方放不下且上方更宽裕时翻到上方，最后夹进视口
+  let top = inputRect.bottom + margin;
+  const spaceBelow = viewportHeight - inputRect.bottom - margin * 2;
+  const spaceAbove = inputRect.top - margin * 2;
+  if (panelHeight > spaceBelow && spaceAbove > spaceBelow) {
+    top = inputRect.top - panelHeight - margin;
+  }
+  top = Math.min(top, viewportHeight - panelHeight - margin);
+  top = Math.max(margin, top);
+
+  quickPanelEl.style.left = `${Math.round(left)}px`;
+  quickPanelEl.style.top = `${Math.round(top)}px`;
 }
 
 function hideQuickPanel() {
@@ -694,15 +786,12 @@ async function copyText(text, label) {
 }
 
 async function requestCredentialsForCurrentUrl() {
-  if (window.top !== window.self) {
-    return [];
-  }
-
   const cacheFresh = credentialCache.url === location.href && Date.now() - credentialCache.at < 5000;
   if (cacheFresh) {
     return credentialCache.credentials;
   }
 
+  // 子 frame（例如阿里云登录弹窗 iframe）也要能取到凭据，站点由后台按顶层页面换算
   const response = await safeRuntimeSendMessage({
     type: 'GET_CREDENTIALS_FOR_URL',
     url: location.href
@@ -849,7 +938,15 @@ function init() {
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   try {
+    if (message?.type === 'PM_EXT_PING') {
+      sendResponse({ ok: true });
+      return true;
+    }
+
     if (message?.type === 'EXPORT_WEBAPP_DATA') {
+      if (window.top !== window.self) {
+        return undefined;
+      }
       const auth = localStorage.getItem('master_password_hash');
       const passwords = localStorage.getItem('encrypted_passwords');
       sendResponse({ ok: true, auth, passwords, url: location.href });
@@ -857,6 +954,9 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     }
 
     if (message?.type === 'IMPORT_WEBAPP_DATA') {
+      if (window.top !== window.self) {
+        return undefined;
+      }
       const authRaw = message?.payload?.authRaw || '';
       const passwordsRaw = message?.payload?.passwordsRaw || '[]';
       const deletesRaw = message?.payload?.deletesRaw || '[]';
