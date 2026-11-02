@@ -142,16 +142,50 @@ function toKeyDomain(urlString = '') {
   }
 }
 
+// 站点键：普通域名取 eTLD+1，IP / localhost / 带非默认端口的主机保留 host:port，
+// 这样 10.82.4.252:5173 与 10.82.4.252:5174 不会被当成同一个站点。
+function toSiteHost(urlString = '') {
+  try {
+    const url = new URL(urlString);
+    const host = String(url.host || '').toLowerCase().replace(/^www\./i, '');
+    if (!host) {
+      return '';
+    }
+
+    const hostname = String(url.hostname || '').toLowerCase().replace(/^www\./i, '');
+    const hasPort = host !== hostname;
+    const isIpv4 = /^\d+\.\d+\.\d+\.\d+$/.test(hostname);
+    const isIpv6 = hostname.startsWith('[');
+    const isLocalhost = hostname === 'localhost' || hostname.endsWith('.localhost');
+
+    if (hasPort || isIpv4 || isIpv6 || isLocalhost) {
+      return host;
+    }
+
+    return toKeyDomain(urlString);
+  } catch {
+    return '';
+  }
+}
+
+async function getActiveSiteHost() {
+  const activeTab = await getActiveTab();
+  const tabUrl = activeTab?.url || '';
+  return /^https?:\/\//i.test(tabUrl) ? toSiteHost(tabUrl) : '';
+}
+
 async function syncActiveWebsiteToInput() {
   const websiteInput = document.getElementById('addWebsite');
   if (!websiteInput) {
     return '';
   }
 
-  const activeTab = await getActiveTab();
-  const keyDomain = toKeyDomain(activeTab?.url || '');
-  websiteInput.value = keyDomain;
-  return keyDomain;
+  const siteHost = await getActiveSiteHost();
+  // 只做默认填充，不覆盖用户已填写的内容（否则会被截成无端口的主机名）
+  if (!websiteInput.value.trim()) {
+    websiteInput.value = siteHost;
+  }
+  return websiteInput.value.trim() || siteHost;
 }
 
 let lastAutoSearchDomain = '';
@@ -163,6 +197,7 @@ async function syncActiveDomainToSearch() {
 
   const activeTab = await getActiveTab();
   const tabUrl = activeTab?.url || '';
+  // 搜索框只填主机名，保证同主机不同端口的账号都能列出来（结果里会显示端口来区分）
   const keyDomain = /^https?:\/\//i.test(tabUrl) ? toKeyDomain(tabUrl) : '';
   const currentValue = searchInputEl.value.trim();
 

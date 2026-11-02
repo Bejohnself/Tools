@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Be Password Manager Extension",
   "description": "主密码解锁、自动填充、自动保存注册账号密码",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "permissions": ["storage", "tabs", "scripting"],
 
   "host_permissions": ["<all_urls>"],

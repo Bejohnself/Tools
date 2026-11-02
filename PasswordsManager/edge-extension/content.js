@@ -412,7 +412,7 @@ async function notifyCredentialUsed(credential) {
       payload: {
         id: credential.id,
         username: credential.username,
-        domain: location.hostname,
+        domain: location.host,
         url: location.href
       }
     })
@@ -581,7 +581,7 @@ function ensureQuickPanel() {
     if (!credential || !quickPanelSubEl) {
       return;
     }
-    quickPanelSubEl.textContent = `${credential.username} @ ${credential.domain || location.hostname}`;
+    quickPanelSubEl.textContent = `${credential.username} @ ${credential.domain || location.host}`;
   });
 
   document.body.appendChild(panel);
@@ -642,7 +642,7 @@ function showQuickPanel(input, credentials) {
   });
 
   const first = activeCredentials[0];
-  quickPanelSubEl.textContent = `${first.username} @ ${first.domain || location.hostname}`;
+  quickPanelSubEl.textContent = `${first.username} @ ${first.domain || location.host}`;
   quickPanelEl.style.display = 'block';
   updateQuickPanelPosition();
 }
@@ -676,7 +676,7 @@ function fillCredential(credential, anchorInput) {
   }
 
   debugLog('手动触发填充', {
-    domain: location.hostname,
+    domain: location.host,
     usernameFilled: Boolean(usernameInput),
     passwordFilled: Boolean(passwordInput)
   });
@@ -808,7 +808,7 @@ function extractFormCredential(form) {
 
   return {
     url: location.href,
-    domain: location.hostname,
+    domain: location.host,
     username: usernameInput.value.trim(),
     password: passwordInput.value,
     isRegistration
@@ -924,17 +924,38 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       }
 
 
-      const normalizeDeleteDomain = (value) => {
+      const parseDeleteSite = (value) => {
         if (!value) {
-          return '';
+          return { host: '', hostname: '' };
         }
         const asUrl = /^https?:\/\//i.test(value) ? value : `https://${value}`;
         try {
-          const { hostname } = new URL(asUrl);
-          return hostname.replace(/^www\./i, '').toLowerCase();
+          const url = new URL(asUrl);
+          return {
+            host: url.host.toLowerCase().replace(/^www\./i, ''),
+            hostname: url.hostname.toLowerCase().replace(/^www\./i, '')
+          };
         } catch {
-          return String(value || '').trim().toLowerCase();
+          const fallback = String(value || '').trim().toLowerCase();
+          return { host: fallback, hostname: fallback };
         }
+      };
+
+      const isSameSite = (left, right) => {
+        if (!left.host || !right.host) {
+          return false;
+        }
+        if (left.host === right.host) {
+          return true;
+        }
+        // 无端口的旧记录兼容同主机所有端口
+        if (left.host === left.hostname && left.hostname === right.hostname) {
+          return true;
+        }
+        if (right.host === right.hostname && right.hostname === left.hostname) {
+          return true;
+        }
+        return false;
       };
 
       const shouldDeleteItem = (item) => {
@@ -947,9 +968,9 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
           const targetUsername = String(target?.username || '').trim().toLowerCase();
           const itemUsername = String(item?.username || '').trim().toLowerCase();
-          const targetDomain = normalizeDeleteDomain(target?.domain || target?.website || '');
-          const itemDomain = normalizeDeleteDomain(item?.domain || item?.website || '');
-          return Boolean(targetUsername && itemUsername && targetDomain && itemDomain && targetUsername === itemUsername && targetDomain === itemDomain);
+          const targetSite = parseDeleteSite(target?.domain || target?.website || '');
+          const itemSite = parseDeleteSite(item?.domain || item?.website || '');
+          return Boolean(targetUsername && itemUsername && targetUsername === itemUsername && isSameSite(targetSite, itemSite));
         });
       };
 

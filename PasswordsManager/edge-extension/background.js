@@ -41,27 +41,46 @@ function debugLog(...args) {
 }
 
 
-function normalizeDomain(urlString) {
+// 站点键 = host + 非默认端口（URL.host 会自动省略 80/443）。
+// 这样 10.82.4.252:5173 与 10.82.4.252:5174 会被视为两个不同站点。
+function parseSite(value) {
+  const raw = String(value || '').trim();
+  if (!raw) {
+    return { host: '', hostname: '' };
+  }
+
+  const asUrl = /^[a-z][a-z0-9+.-]*:\/\//i.test(raw) ? raw : `https://${raw}`;
   try {
-    const { hostname } = new URL(urlString);
-    return hostname.replace(/^www\./i, '').toLowerCase();
+    const url = new URL(asUrl);
+    return {
+      host: url.host.toLowerCase().replace(/^www\./i, ''),
+      hostname: url.hostname.toLowerCase().replace(/^www\./i, '')
+    };
   } catch {
-    return '';
+    return { host: '', hostname: '' };
   }
 }
 
 function normalizeDomainLoose(value) {
-  if (!value) {
-    return '';
-  }
+  return parseSite(value).host;
+}
 
-  const asUrl = /^https?:\/\//i.test(value) ? value : `https://${value}`;
-  try {
-    const { hostname } = new URL(asUrl);
-    return hostname.replace(/^www\./i, '').toLowerCase();
-  } catch {
+function hostnameOf(host) {
+  const target = String(host || '');
+  if (!target) {
     return '';
   }
+  if (target.startsWith('[')) {
+    const end = target.indexOf(']');
+    return end === -1 ? target : target.slice(0, end + 1);
+  }
+  const idx = target.lastIndexOf(':');
+  return idx === -1 ? target : target.slice(0, idx);
+}
+
+function hasExplicitPort(host) {
+  const target = String(host || '');
+  return Boolean(target) && target !== hostnameOf(target);
 }
 
 function toUnixMs(value) {
@@ -74,7 +93,50 @@ function normalizeUsername(value) {
 }
 
 function resolveCredentialDomain(domain, website) {
-  return normalizeDomainLoose(domain) || normalizeDomainLoose(website) || '';
+  const fromDomain = normalizeDomainLoose(domain);
+  const fromWebsite = normalizeDomainLoose(website);
+
+  if (!fromDomain) {
+    return fromWebsite;
+  }
+
+  // 记录 key 里没有端口、但 website 原文带端口时（例如网页版导入的数据），以 website 为准，避免丢端口
+  if (
+    fromWebsite &&
+    !hasExplicitPort(fromDomain) &&
+    hasExplicitPort(fromWebsite) &&
+    hostnameOf(fromWebsite) === fromDomain
+  ) {
+    return fromWebsite;
+  }
+
+  return fromDomain;
+}
+
+function websiteForEntry(entry) {
+  const rawWebsite = String(entry?.website || '').trim();
+  const domain = normalizeDomainLoose(entry?.domain) || normalizeDomainLoose(rawWebsite);
+
+  if (!rawWebsite) {
+    return domain;
+  }
+
+  // website 与记录 key 的 host 不一致（例如记录已带端口、website 还是无端口旧值）时，用带端口的 key 回写
+  const websiteHost = normalizeDomainLoose(rawWebsite);
+  if (domain && websiteHost !== domain) {
+    return domain;
+  }
+
+  return rawWebsite;
+}
+
+function isSameDomainAndUsername(left, right) {
+  const leftDomain = resolveCredentialDomain(left?.domain, left?.website);
+  const rightDomain = resolveCredentialDomain(right?.domain, right?.website);
+  const leftUsername = normalizeUsername(left?.username);
+  const rightUsername = normalizeUsername(right?.username);
+
+  return Boolean(leftDomain && rightDomain && leftUsername && rightUsername && leftDomain === rightDomain && leftUsername === rightUsername);
 }
 
 function isSameCredential(left, right) {
@@ -84,12 +146,7 @@ function isSameCredential(left, right) {
     return true;
   }
 
-  const leftDomain = resolveCredentialDomain(left?.domain, left?.website);
-  const rightDomain = resolveCredentialDomain(right?.domain, right?.website);
-  const leftUsername = normalizeUsername(left?.username);
-  const rightUsername = normalizeUsername(right?.username);
-
-  return Boolean(leftDomain && rightDomain && leftUsername && rightUsername && leftDomain === rightDomain && leftUsername === rightUsername);
+  return isSameDomainAndUsername(left, right);
 }
 
 function sanitizePendingDeletes(list) {
@@ -238,6 +295,7 @@ async function getUnlockedMasterPassword() {
 
   inMemoryMasterPassword = rememberedPassword;
   await setSessionMasterPassword(rememberedPassword);
+  await migrateVaultDomains();
   return rememberedPassword;
 }
 
@@ -266,22 +324,106 @@ async function encryptAndSaveVault(entries) {
   await setVault(payload);
 }
 
-function pickCredentialsByDomain(entries, domain) {
-  if (!domain) {
+const DOMAIN_SCHEMA_VERSION = 2;
+let domainMigrationPromise = null;
+
+// 一次性迁移：把 domain 从“无端口 hostname”升级为“host:port”。
+// 端口信息来自旧记录的 website 原文；无法还原的记录保持原样（仍作为该主机的兜底）。
+async function migrateVaultDomains() {
+  if (domainMigrationPromise) {
+    return domainMigrationPromise;
+  }
+
+  domainMigrationPromise = (async () => {
+    const meta = await getMeta();
+    if (Number(meta?.domainSchemaVersion || 0) >= DOMAIN_SCHEMA_VERSION) {
+      return { ok: true, skipped: true, changed: 0 };
+    }
+
+    const entries = await decryptVault();
+    if (!entries) {
+      return { ok: false, reason: 'LOCKED', changed: 0 };
+    }
+
+    let changed = 0;
+    const nextEntries = entries.map((entry) => {
+      const currentDomain = normalizeDomainLoose(entry?.domain);
+      const nextDomain = resolveCredentialDomain(entry?.domain, entry?.website);
+      if (!nextDomain || nextDomain === currentDomain) {
+        return entry;
+      }
+      changed += 1;
+      return { ...entry, domain: nextDomain };
+    });
+
+    if (changed > 0) {
+      await encryptAndSaveVault(nextEntries);
+    }
+
+    await patchMeta({ domainSchemaVersion: DOMAIN_SCHEMA_VERSION });
+    debugLog('migrateVaultDomains', { changed, total: entries.length });
+    return { ok: true, changed };
+  })()
+    .catch((error) => {
+      debugLog('migrateVaultDomains failed', String(error?.message || error));
+      return { ok: false, reason: 'MIGRATION_FAILED', changed: 0 };
+    })
+    .finally(() => {
+      domainMigrationPromise = null;
+    });
+
+  return domainMigrationPromise;
+}
+
+function domainMatchRank(entryDomain, site) {
+  const domain = normalizeDomainLoose(entryDomain);
+  if (!domain || !site?.host) {
+    return -1;
+  }
+
+  // 0：host:port 完全一致（当前端口专属记录）
+  if (domain === site.host) {
+    return 0;
+  }
+
+  // 1：无端口的旧记录，兼容同主机所有端口
+  if (domain === site.hostname) {
+    return 1;
+  }
+
+  const domainHostname = hostnameOf(domain);
+  const domainHasPort = domain !== domainHostname;
+
+  if (!domainHasPort && site.hostname.endsWith(`.${domain}`)) {
+    return 2;
+  }
+
+  if (domainHasPort && site.host.endsWith(`.${domain}`)) {
+    return 3;
+  }
+
+  return -1;
+}
+
+function pickCredentialsByDomain(entries, site) {
+  if (!site?.host) {
     return [];
   }
 
   return entries
-    .filter((item) => item?.domain && (item.domain === domain || domain.endsWith(`.${item.domain}`)))
+    .map((item) => ({ item, rank: domainMatchRank(item?.domain || item?.website, site) }))
+    .filter((matched) => matched.rank >= 0)
     .sort((a, b) => {
-      const domainScore = b.domain.length - a.domain.length;
-      if (domainScore !== 0) {
-        return domainScore;
+      if (a.rank !== b.rank) {
+        return a.rank - b.rank;
       }
-      const bUsed = Date.parse(b.lastUsedAt || b.updatedAt || b.createdAt || 0) || 0;
-      const aUsed = Date.parse(a.lastUsedAt || a.updatedAt || a.createdAt || 0) || 0;
-      return bUsed - aUsed;
-    });
+      const lengthDiff = String(b.item?.domain || '').length - String(a.item?.domain || '').length;
+      if (lengthDiff !== 0) {
+        return lengthDiff;
+      }
+      return entryRecencyScore(b.item) - entryRecencyScore(a.item);
+    })
+    .map((matched) => matched.item);
 }
 
 
@@ -340,6 +482,7 @@ async function unlock(masterPassword, rememberDevice = false) {
   inMemoryMasterPassword = masterPassword;
   await setSessionMasterPassword(masterPassword);
   await setRememberDevicePreference(Boolean(rememberDevice));
+  await migrateVaultDomains();
 
   if (rememberDevice) {
     const remembered = await saveRememberDeviceToken(masterPassword);
@@ -431,18 +574,18 @@ async function getCredentialsForUrl(url) {
     return { ok: false, reason: 'LOCKED' };
   }
 
-  const domain = normalizeDomain(url);
-  const credentials = pickCredentialsByDomain(entries, domain).map((item) => ({
+  const site = parseSite(url);
+  const credentials = pickCredentialsByDomain(entries, site).map((item) => ({
     id: item.id,
     username: item.username,
     password: item.password,
-    domain: item.domain,
+    domain: resolveCredentialDomain(item.domain, item.website),
     website: item.website || item.domain,
     lastUsedAt: item.lastUsedAt || null
   }));
 
   debugLog('GET_CREDENTIALS_FOR_URL', {
-    domain,
+    domain: site.host,
     matchedCount: credentials.length,
     totalEntries: entries.length
   });
@@ -456,11 +599,8 @@ function entryRecencyScore(entry) {
   return Date.parse(entry?.lastUsedAt || entry?.updatedAt || entry?.createdAt || 0) || 0;
 }
 
-function isEntryForDomain(entry, activeDomain) {
-  if (!activeDomain || !entry?.domain) {
-    return false;
-  }
-  return entry.domain === activeDomain || activeDomain.endsWith(`.${entry.domain}`);
+function isEntryForDomain(entry, site) {
+  return domainMatchRank(entry?.domain || entry?.website, site) >= 0;
 }
 
 async function searchCredentials(payload = {}) {
@@ -475,7 +615,7 @@ async function searchCredentials(payload = {}) {
   }
 
   const tokens = keyword.split(/\s+/).filter(Boolean);
-  const activeDomain = normalizeDomainLoose(payload.url || '');
+  const site = parseSite(payload.url || '');
 
   const matched = entries.filter((item) => {
     if (!item) {
@@ -488,7 +628,7 @@ async function searchCredentials(payload = {}) {
   });
 
   matched.sort((a, b) => {
-    const priorityDiff = Number(!isEntryForDomain(a, activeDomain)) - Number(!isEntryForDomain(b, activeDomain));
+    const priorityDiff = Number(!isEntryForDomain(a, site)) - Number(!isEntryForDomain(b, site));
     if (priorityDiff !== 0) {
       return priorityDiff;
     }
@@ -497,7 +637,7 @@ async function searchCredentials(payload = {}) {
 
   const results = matched.slice(0, 50).map((item) => ({
     id: item.id,
-    domain: item.domain,
+    domain: resolveCredentialDomain(item.domain, item.website),
     website: item.website || item.domain,
     username: item.username,
     password: item.password,
@@ -515,18 +655,18 @@ async function markCredentialUsed(payload) {
     return { ok: false, reason: 'LOCKED' };
   }
 
-  const domain = normalizeDomain(payload.url || `https://${payload.domain || ''}`);
+  const site = parseSite(payload.url || `https://${payload.domain || ''}`);
   const targetId = payload.id || '';
   const targetUsername = (payload.username || '').trim();
 
-  if (!domain || (!targetId && !targetUsername)) {
+  if (!site.host || (!targetId && !targetUsername)) {
     return { ok: false, reason: 'INVALID_PAYLOAD' };
   }
 
   const index = entries.findIndex(
     (item) =>
-      item.domain === domain &&
-      (item.id === targetId || (!targetId && item.username === targetUsername))
+      domainMatchRank(item?.domain || item?.website, site) >= 0 &&
+      (targetId ? item.id === targetId : item.username === targetUsername)
   );
 
   if (index === -1) {
@@ -550,13 +690,14 @@ async function saveSubmittedCredential(data) {
     return { ok: false, reason: 'LOCKED' };
   }
 
-  const domain = normalizeDomain(data.url || `https://${data.domain || ''}`);
+  const site = parseSite(data.url || `https://${data.domain || ''}`);
+  const domain = site.host;
   if (!domain || !data.username || !data.password) {
     return { ok: false, reason: 'INVALID_PAYLOAD' };
   }
 
-  const existingIndex = entries.findIndex(
-    (item) => item.domain === domain && item.username === data.username
+  const existingIndex = entries.findIndex((item) =>
+    isSameDomainAndUsername(item, { domain, website: data.url || '', username: data.username })
   );
 
   if (data.isRegistration) {
@@ -638,8 +779,7 @@ async function mapWebPayloadToEntries(payload, masterPassword) {
     }
 
     const domain =
-      normalizeDomainLoose(item.website) ||
-      normalizeDomainLoose(item.domain) ||
+      resolveCredentialDomain(item.domain, item.website) ||
       normalizeDomainLoose(payload.sourceUrl || '');
 
     if (!domain) {
@@ -697,7 +837,7 @@ async function initializeFromWebApp(payload) {
 
   inMemoryMasterPassword = masterPassword;
   await setSessionMasterPassword(masterPassword);
-  await patchMeta({ lastWebImportAt: new Date().toISOString() });
+  await patchMeta({ lastWebImportAt: new Date().toISOString(), domainSchemaVersion: DOMAIN_SCHEMA_VERSION });
 
   return { ok: true, count: mappedResult.entries.length };
 }
@@ -753,11 +893,13 @@ async function syncLoginFromWeb(payload = {}) {
 
   inMemoryMasterPassword = masterPassword;
   await setSessionMasterPassword(masterPassword);
+  await migrateVaultDomains();
 
   return { ok: true, initialized: false, unlocked: true };
 }
 
 async function importFromWebApp(payload) {
+  await migrateVaultDomains();
   const currentEntries = await decryptVault();
   const masterPassword = await getUnlockedMasterPassword();
   if (!currentEntries || !masterPassword) {
@@ -777,7 +919,7 @@ async function importFromWebApp(payload) {
 
   if (mode === 'replace') {
     await encryptAndSaveVault(importedEntries);
-    await patchMeta({ lastWebImportAt: new Date().toISOString() });
+    await patchMeta({ lastWebImportAt: new Date().toISOString(), domainSchemaVersion: DOMAIN_SCHEMA_VERSION });
     return { ok: true, mode, replaced: true, added: importedEntries.length, updated: 0 };
   }
 
@@ -786,9 +928,7 @@ async function importFromWebApp(payload) {
   let updated = 0;
 
   for (const item of importedEntries) {
-    const index = entries.findIndex(
-      (entry) => entry.domain === item.domain && entry.username === item.username
-    );
+    const index = entries.findIndex((entry) => isSameDomainAndUsername(entry, item));
 
     if (index === -1) {
       entries.push(item);
@@ -863,7 +1003,7 @@ async function exportNewEntriesToWebApp(payload = {}) {
 
     encryptedPasswords.push({
       id: item.id || crypto.randomUUID(),
-      website: item.website || item.domain || '',
+      website: websiteForEntry(item),
       username: item.username,
       password: await encryptLegacyPassword(item.password, webKey),
       notes: item.notes || '',
@@ -974,20 +1114,21 @@ async function addCredentialManual(payload) {
   const notes = (payload?.notes || '').trim();
   const websiteRaw = (payload?.website || payload?.domain || payload?.url || '').trim();
   const domain = normalizeDomainLoose(websiteRaw);
+  const website = websiteForEntry({ domain, website: websiteRaw });
 
   if (!domain || !username || !password) {
     return { ok: false, message: '网站、用户名、密码均不能为空' };
   }
 
   const now = new Date().toISOString();
-  const existingIndex = entries.findIndex(
-    (item) => item.domain === domain && item.username === username
+  const existingIndex = entries.findIndex((item) =>
+    isSameDomainAndUsername(item, { domain, website, username })
   );
 
   if (existingIndex !== -1) {
     entries[existingIndex] = {
       ...entries[existingIndex],
-      website: websiteRaw || entries[existingIndex].website || domain,
+      website: website || entries[existingIndex].website || domain,
       password,
       notes: notes || entries[existingIndex].notes || '',
       updatedAt: now,
@@ -1002,7 +1143,7 @@ async function addCredentialManual(payload) {
 
     id: crypto.randomUUID(),
     domain,
-    website: websiteRaw || domain,
+    website: website || domain,
     username,
     password,
     notes,
